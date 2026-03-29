@@ -34,6 +34,7 @@
   .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
   .b-green{background:rgba(0,212,170,.15);color:var(--green)}.b-yellow{background:rgba(255,184,77,.15);color:var(--yellow)}.b-red{background:rgba(255,92,92,.15);color:var(--red)}.b-gray{background:rgba(85,90,114,.2);color:var(--gray)}.b-blue{background:rgba(79,124,255,.15);color:var(--accent)}
   .chevron{color:var(--text3);font-size:16px;transition:transform .2s}.chevron.open{transform:rotate(90deg)}
+  .card-preview{border-top:0.5px solid var(--border)}
   .card-body{display:none;border-top:1px solid var(--border)}.card-body.open{display:block}
   .card-section{padding:10px 12px;border-bottom:1px solid var(--border)}.card-section:last-child{border-bottom:none}
   .section-label{font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
@@ -103,7 +104,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v9</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v17</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -283,7 +284,13 @@
   <div class="modal">
     <div class="modal-title" id="callModalTitle">Добавить звонок</div>
     <div class="form-row"><label>№ заявки</label><input type="text" id="cl-order" placeholder="1" style="font-size:16px;font-weight:600;color:var(--accent);font-family:var(--mono)"></div>
-    <div class="form-row"><label>Телефон перевозчика</label><input type="tel" id="cl-phone" placeholder="067 111 22 33" oninput="formatPhone('cl-phone')"></div>
+    <div class="form-row">
+      <label>Телефон перевозчика</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="tel" id="cl-phone" placeholder="+380671112233" style="flex:1" oninput="document.getElementById('cl-call-btn').href='tel:'+phoneForCall(this.value)">
+        <a id="cl-call-btn" href="" style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:7px 14px;font-size:13px;text-decoration:none;white-space:nowrap">📞 Звонить</a>
+      </div>
+    </div>
     <div class="form-row"><label>Имя перевозчика</label><input type="text" id="cl-name" placeholder="Василий К."></div>
     <div class="form-row"><label>Предложенная цена (грн)</label><input type="number" id="cl-price" placeholder="18000"></div>
     <div class="form-row"><label>Результат</label>
@@ -308,7 +315,34 @@ let editOrderIdx=-1;
 let editCallIdx=-1;
 let dataLoaded=false;
 
-function fmtDate(d){if(!d)return '';if(d.includes('-')){const[y,m,dd]=d.split('-');return `${dd}.${m}.${y}`;}return d;}
+function rawPhone(raw){
+  // Returns phone as digits only starting with 0: 0981234567
+  const s=String(raw||'').trim();
+  if(!s)return '';
+  let v=s.replace(/\D/g,'');
+  if(v.startsWith('380'))v='0'+v.slice(3);
+  else if(v.startsWith('38'))v='0'+v.slice(2);
+  else if(v.startsWith('0'))v=v;
+  else if(v.length===9)v='0'+v;
+  else if(v.length===10&&!v.startsWith('0'))v='0'+v.slice(1);
+  // ensure starts with 0 and is 10 digits
+  if(!v.startsWith('0'))v='0'+v;
+  return v.slice(0,10);
+}
+function fmtDate(d){
+  if(!d&&d!==0)return '';
+  const s=String(d).trim();
+  if(!s||s==='0')return '';
+  // already in dd.mm.yyyy
+  if(/^\d{2}\.\d{2}\.\d{4}$/.test(s))return s;
+  // yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)){const p=s.slice(0,10).split('-');return `${p[2]}.${p[1]}.${p[0]}`;}
+  // dd.mm.yy -> dd.mm.20yy
+  if(/^\d{2}\.\d{2}\.\d{2}$/.test(s)){const p=s.split('.');return `${p[0]}.${p[1]}.20${p[2]}`;}
+  // try as date object string
+  try{const dt=new Date(s);if(!isNaN(dt.getTime())){return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;}}catch(e){}
+  return s;
+}
 function todayStr(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;}
 
 function formatPhone(id){
@@ -319,7 +353,26 @@ function formatPhone(id){
   if(v.length>10)v=v.slice(0,10);
   el.value=v;
 }
-function fullPhone(raw){return String(raw||'').trim();}
+function fullPhone(raw){
+  const s=String(raw||'').trim();
+  if(!s)return '';
+  // strip all non-digits
+  let v=s.replace(/\D/g,'');
+  if(!v)return s;
+  // normalize to 10 digits (UA format starting with 0)
+  if(v.startsWith('380'))v=v.slice(2); // 380xx -> 0xx
+  else if(v.startsWith('38'))v=v.slice(2);
+  if(v.length===9)v='0'+v; // 9 digits -> add leading 0
+  if(v.length===10){
+    // format: +38 (0XX) XXX X XXX
+    const op=v.slice(0,3);
+    const p1=v.slice(3,6);
+    const p2=v.slice(6,7);
+    const p3=v.slice(7,10);
+    return `+38 (${op}) ${p1} ${p2} ${p3}`;
+  }
+  return '+38'+v;
+}
 function phoneForCall(raw){return String(raw||'').replace(/\s/g,'').replace(/[()\-]/g,'');}
 function phoneKey(raw){return String(raw||'').replace(/\D/g,'');}
 function normalizePhone(raw){
@@ -346,7 +399,7 @@ async function loadAll(){
       city:String(r['Базировка']||'').trim(),
       cars:String(r['Кол-во.Авто']||'').trim(),
       type:String(r['Тип машын']||r['Тип машины']||'').trim(),
-      phone:String(r['Телефон для CRM']||r['Телефон 1']||r['Телефон']||'').trim(),
+      phone:String(r['Телефон 1']||r['Телефон']||'').trim(),
       status:String(r['Статус']||'').trim()||'Невідомий',
       comment:String(r['Комментарий']||r['Коментарій']||'').trim(),
       local:false
@@ -356,7 +409,7 @@ async function loadAll(){
 
     orders=oData.filter(r=>r['№ заявки']||r['№ заявки']==='0').map(r=>({
       num:String(r['№ заявки']||'').trim(),
-      date:String(r['Дата']||'').trim(),
+      date:fmtDate(String(r['Дата']||'').trim()),
       cargo:String(r['Груз']||'').trim(),
       weight:String(r['Вес']||'').trim(),
       fromCity:String(r['Город откуда']||'').trim(),
@@ -364,8 +417,8 @@ async function loadAll(){
       toCity:String(r['Город куда']||'').trim(),
       toVillage:String(r['Село куда']||'').trim(),
       dist:String(r['Расстояние']||'').trim(),
-      start:String(r['Дата начала']||'').trim(),
-      end:String(r['Дата конца']||'').trim(),
+      start:fmtDate(String(r['Дата начала']||'').trim()),
+      end:fmtDate(String(r['Дата конца']||'').trim()),
       cars:String(r['Кол-во машин']||'').trim(),
       truck:String(r['Тип машины']||'').trim(),
       priceNds:String(r['Цена НДС']||'').trim(),
@@ -375,9 +428,9 @@ async function loadAll(){
     }));
 
     calls=clData.filter(r=>r['Дата']||r['№ заявки']).map(r=>({
-      date:String(r['Дата']||'').trim(),
+      date:fmtDate(String(r['Дата']||'').trim()),
       orderId:String(r['№ заявки']||'').trim(),
-      phone:String(r['Телефон']||'').trim(),
+      phone:String(r['Телефон для CRM']||r['Телефон']||'').trim(),
       carrierName:String(r['Перевозчик']||'').trim(),
       price:String(r['Цена']||'').trim(),
       result:String(r['Результат']||'').trim(),
@@ -496,17 +549,18 @@ function renderCarriers(){
     const renderCallItem=(cl,ri)=>{
       const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';
       const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';
-      return `<div class="history-item">
-        <div class="h-row1">
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Заявка #${cl.orderId} · ${cl.date}</span>
-            <div style="display:flex;align-items:center;gap:6px">
+      return `<div style="padding:8px 12px;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="font-size:14px;font-weight:600;color:var(--accent);font-family:var(--mono)">#${cl.orderId}</span>
+              <span style="font-size:11px;color:var(--text3)">${cl.date}</span>
               <span class="badge ${rc}">${icon} ${cl.result}</span>
-              ${cl.price?`<span style="font-size:11px;color:var(--accent2);font-family:var(--mono)">${cl.price} грн</span>`:''}
             </div>
-            ${cl.comment?`<span style="font-size:12px;color:var(--text2);margin-top:2px">${cl.comment}</span>`:''}
+            ${cl.price?`<div style="font-size:12px;color:var(--accent2);font-family:var(--mono);margin-bottom:2px">${cl.price} грн</div>`:''}
+            ${cl.comment?`<div style="font-size:12px;color:var(--text2)">${cl.comment}</div>`:''}
           </div>
-          <button class="edit-btn" onclick="openEditCall(${ri})" style="flex-shrink:0">✎</button>
+          <button class="edit-btn" onclick="openEditCall(${ri})" style="flex-shrink:0;margin-left:8px">✎</button>
         </div>
       </div>`;
     };
@@ -521,9 +575,21 @@ function renderCarriers(){
     return `<div class="card">
       <div class="card-head" onclick="toggleCard('${key}')">
         <div class="avatar av-${cls}">${ini(c.name)}</div>
-        <div class="card-info"><div class="card-name">${c.name}</div><div class="card-meta">${c.city} · ${c.type||'—'} · ${c.cars||'—'} авт.</div>${c.comment?`<div style='font-size:10px;color:var(--text3);margin-top:2px'>${c.comment}</div>`:''}</div>
+        <div class="card-info">
+          <div class="card-name">${c.name}</div>
+          <div class="card-meta">${c.city} · ${c.type||'—'} · ${c.cars||'—'} авт.</div>
+          ${c.comment?`<div style='font-size:10px;color:var(--text3);margin-top:2px'>${c.comment}</div>`:''}
+        </div>
         <span class="badge b-${cls}" style="margin-right:4px;flex-shrink:0">${sLabel(c.status)}</span>
         <span class="chevron" id="chev-${key}">›</span>
+      </div>
+      <div class="card-preview" id="preview-${key}">
+        ${visHTML}
+        ${hidHTML}
+        <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a>
+          <button class="add-call-btn" style="width:auto;padding:5px 12px;font-size:11px;margin:0" onclick="openAddCallForCarrier('${sp}','${sn}')">+ Звонок</button>
+        </div>
       </div>
       <div class="card-body" id="body-${key}">
         <div class="card-section">
@@ -531,8 +597,8 @@ function renderCarriers(){
           <div class="phone-row"><span class="phone-num">${ph}</span><a class="call-btn" href="tel:${phoneForCall(c.phone)}">Позвонить</a></div>
         </div>
         <div class="card-section">
-          <div class="section-label">История звонков</div>
-          ${histHTML}
+          <div class="section-label">Все звонки</div>
+          ${cCalls.length?cCalls.map(cl=>{const ri=calls.indexOf(cl);const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';return `<div class="history-item"><div class="h-row1"><div><span style="font-size:12px;font-weight:600;color:var(--accent);font-family:var(--mono)">#${cl.orderId}</span><span style="font-size:11px;color:var(--text3);margin-left:8px">${cl.date}</span></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${rc}">${icon} ${cl.result}</span><button class="edit-btn" onclick="openEditCall(${ri})">✎</button></div></div>${cl.price?`<div style="font-size:12px;color:var(--accent2);font-family:var(--mono)">${cl.price} грн</div>`:''} ${cl.comment?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${cl.comment}</div>`:''}</div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);padding:6px 0">Звонков нет</div>'}
           <button class="add-call-btn" style="margin-top:8px" onclick="openAddCallForCarrier('${sp}','${sn}')">+ Добавить звонок</button>
         </div>
       </div>
@@ -591,7 +657,9 @@ function openAddCallForCarrier(phone,name){
   editCallIdx=-1;
   document.getElementById('callModalTitle').textContent='Добавить звонок';
   document.getElementById('cl-del-btn').style.display='none';
-  document.getElementById('cl-phone').value=phoneKey(phone);
+  const ph=fullPhone(phone);
+  document.getElementById('cl-phone').value=ph;
+  document.getElementById('cl-call-btn').href='tel:'+phoneForCall(ph);
   document.getElementById('cl-name').value=name;
   ['cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
@@ -603,13 +671,15 @@ function openAddCall(){
   document.getElementById('cl-del-btn').style.display='none';
   ['cl-phone','cl-name','cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
+  document.getElementById('cl-call-btn').href='';
   openModal('modalCall');
 }
 function openEditCall(idx){
   editCallIdx=idx;const c=calls[idx];
   document.getElementById('callModalTitle').textContent='Редактировать звонок';
   document.getElementById('cl-del-btn').style.display='block';
-  document.getElementById('cl-phone').value=phoneKey(c.phone||'');
+  document.getElementById('cl-phone').value=c.phone||'';
+  document.getElementById('cl-call-btn').href='tel:'+phoneForCall(c.phone||'');
   document.getElementById('cl-name').value=c.carrierName||'';
   document.getElementById('cl-order').value=c.orderId||'';
   document.getElementById('cl-price').value=c.price||'';
@@ -625,7 +695,7 @@ function saveCall(){
     saveAllCalls();
   } else {
     calls.push(obj);
-    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',row:[obj.date,obj.orderId,obj.phone,obj.carrierName,obj.price,obj.result,obj.comment]})}).catch(()=>{});
+    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',row:[obj.date,obj.orderId,rawPhone(obj.phone),'',obj.carrierName,obj.price,obj.result,obj.comment]})}).catch(()=>{});
   }
   closeModal('modalCall');renderCarriers();renderCalls();updateStats();
   if(document.getElementById('callbackPanel').classList.contains('open'))renderCallback();
@@ -822,7 +892,7 @@ function saveAllOrders(){
   fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',action:'replace_all',rows})}).catch(()=>{});
 }
 function saveAllCalls(){
-  const rows=calls.map(c=>[c.date,c.orderId,c.phone,c.carrierName,c.price,c.result,c.comment]);
+  const rows=calls.map(c=>[c.date,c.orderId,rawPhone(c.phone),'',c.carrierName,c.price,c.result,c.comment]);
   fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',action:'replace_all',rows})}).catch(()=>{});
 }
 function switchTab(tab){
