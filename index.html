@@ -103,7 +103,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v9</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -299,13 +299,14 @@
 </div>
 
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbxgA8yljZNnzl3XI4i55-cJxNmqvjlqGO879P45TgMYbjKKbrR9crODWh4pY4gzEiIg/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbxmAh9C27sogvnp4WWNgWQ_n4h8OZWtNVhwl2n90SmQROsaSIuPjp8rJfVEJ5ZYG4Ac/exec';
 let carriers=[];
-let orders=JSON.parse(localStorage.getItem('orders')||'[]');
-let calls=JSON.parse(localStorage.getItem('calls')||'[]');
+let orders=[];
+let calls=[];
 let statusFilter='';
 let editOrderIdx=-1;
 let editCallIdx=-1;
+let dataLoaded=false;
 
 function fmtDate(d){if(!d)return '';if(d.includes('-')){const[y,m,dd]=d.split('-');return `${dd}.${m}.${y}`;}return d;}
 function todayStr(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;}
@@ -330,12 +331,17 @@ function normalizePhone(raw){
   return v; // returns 9 digits: 671112233
 }
 
-async function loadCarriers(){
+async function loadAll(){
   try{
-    document.getElementById('carrierList').innerHTML='<div class="empty">Загрузка базы...</div>';
-    const res=await fetch(`${API_URL}?sheet=Перевозчики`);
-    const data=await res.json();
-    carriers=data.filter(r=>r['Имя']&&String(r['Имя']).trim()).map(r=>({
+    document.getElementById('carrierList').innerHTML='<div class="empty">Загрузка данных...</div>';
+    const [cRes, oRes, clRes] = await Promise.all([
+      fetch(`${API_URL}?sheet=Перевозчики`),
+      fetch(`${API_URL}?sheet=Заявки`),
+      fetch(`${API_URL}?sheet=Звонки`)
+    ]);
+    const [cData, oData, clData] = await Promise.all([cRes.json(), oRes.json(), clRes.json()]);
+
+    carriers=cData.filter(r=>r['Имя']&&String(r['Имя']).trim()).map(r=>({
       name:String(r['Имя']||'').trim(),
       city:String(r['Базировка']||'').trim(),
       cars:String(r['Кол-во.Авто']||'').trim(),
@@ -347,11 +353,44 @@ async function loadCarriers(){
     }));
     const local=JSON.parse(localStorage.getItem('localCarriers')||'[]');
     carriers=[...carriers,...local];
-    renderCarriers();updateStats();
+
+    orders=oData.filter(r=>r['№ заявки']||r['№ заявки']==='0').map(r=>({
+      num:String(r['№ заявки']||'').trim(),
+      date:String(r['Дата']||'').trim(),
+      cargo:String(r['Груз']||'').trim(),
+      weight:String(r['Вес']||'').trim(),
+      fromCity:String(r['Город откуда']||'').trim(),
+      fromVillage:String(r['Село откуда']||'').trim(),
+      toCity:String(r['Город куда']||'').trim(),
+      toVillage:String(r['Село куда']||'').trim(),
+      dist:String(r['Расстояние']||'').trim(),
+      start:String(r['Дата начала']||'').trim(),
+      end:String(r['Дата конца']||'').trim(),
+      cars:String(r['Кол-во машин']||'').trim(),
+      truck:String(r['Тип машины']||'').trim(),
+      priceNds:String(r['Цена НДС']||'').trim(),
+      priceFop:String(r['Цена ФОП']||'').trim(),
+      note:String(r['Примечание']||'').trim(),
+      status:String(r['Статус']||'').trim()
+    }));
+
+    calls=clData.filter(r=>r['Дата']||r['№ заявки']).map(r=>({
+      date:String(r['Дата']||'').trim(),
+      orderId:String(r['№ заявки']||'').trim(),
+      phone:String(r['Телефон']||'').trim(),
+      carrierName:String(r['Перевозчик']||'').trim(),
+      price:String(r['Цена']||'').trim(),
+      result:String(r['Результат']||'').trim(),
+      comment:String(r['Комментарий']||'').trim()
+    }));
+
+    dataLoaded=true;
+    renderCarriers();updateStats();renderOrders();renderCalls();
   }catch(e){
-    document.getElementById('carrierList').innerHTML='<div class="empty">Не удалось загрузить базу.<br>'+e.message+'</div>';
+    document.getElementById('carrierList').innerHTML='<div class="empty">Не удалось загрузить данные.<br>'+e.message+'</div>';
   }
 }
+async function loadCarriers(){await loadAll();}
 
 function sClass(s){
   if(!s||s==='Невідомий'||s==='Неизвестный')return 'gray';
@@ -411,7 +450,7 @@ function renderCallback(){
 }
 function changeCallResult(idx,result,btn){
   calls[idx].result=result;
-  localStorage.setItem('calls',JSON.stringify(calls));
+  saveAllCalls();
   updateStats();renderCallback();renderCalls();renderCarriers();
 }
 
@@ -581,15 +620,20 @@ function openEditCall(idx){
 function saveCall(){
   const ph=fullPhone(document.getElementById('cl-phone').value);
   const obj={phone:ph,carrierName:document.getElementById('cl-name').value.trim(),orderId:document.getElementById('cl-order').value.trim(),price:document.getElementById('cl-price').value.trim(),result:document.getElementById('cl-result').value,comment:document.getElementById('cl-comment').value.trim(),date:editCallIdx>=0?calls[editCallIdx].date:todayStr()};
-  if(editCallIdx>=0)calls[editCallIdx]=obj;else calls.push(obj);
-  localStorage.setItem('calls',JSON.stringify(calls));
+  if(editCallIdx>=0){
+    calls[editCallIdx]=obj;
+    saveAllCalls();
+  } else {
+    calls.push(obj);
+    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',row:[obj.date,obj.orderId,obj.phone,obj.carrierName,obj.price,obj.result,obj.comment]})}).catch(()=>{});
+  }
   closeModal('modalCall');renderCarriers();renderCalls();updateStats();
   if(document.getElementById('callbackPanel').classList.contains('open'))renderCallback();
-  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',row:[obj.date,obj.orderId,obj.phone,obj.carrierName,obj.price,obj.result,obj.comment]})}).catch(()=>{});
 }
 function deleteCall(){
   if(editCallIdx<0)return;if(!confirm('Удалить этот звонок?'))return;
-  calls.splice(editCallIdx,1);localStorage.setItem('calls',JSON.stringify(calls));
+  calls.splice(editCallIdx,1);
+  saveAllCalls();
   closeModal('modalCall');renderCarriers();renderCalls();updateStats();
 }
 
@@ -662,15 +706,20 @@ function openEditOrder(idx){
 }
 function deleteOrder(){
   if(editOrderIdx<0)return;if(!confirm('Удалить эту заявку?'))return;
-  orders.splice(editOrderIdx,1);localStorage.setItem('orders',JSON.stringify(orders));
+  orders.splice(editOrderIdx,1);
+  saveAllOrders();
   closeModal('modalOrder');renderOrders();
 }
 function saveOrder(){
   const o={num:document.getElementById('o-num').value,date:document.getElementById('o-date').value,cargo:document.getElementById('o-cargo').value,weight:document.getElementById('o-weight').value,fromCity:document.getElementById('o-from-city').value,fromVillage:document.getElementById('o-from-village').value,toCity:document.getElementById('o-to-city').value,toVillage:document.getElementById('o-to-village').value,dist:document.getElementById('o-dist').value,start:document.getElementById('o-start').value,end:document.getElementById('o-end').value,cars:document.getElementById('o-cars').value,truck:getSelectedTrucks(),priceNds:document.getElementById('o-price-nds').value,priceFop:document.getElementById('o-price-fop').value,note:document.getElementById('o-note').value,status:document.getElementById('o-status').value};
-  if(editOrderIdx>=0)orders[editOrderIdx]=o;else orders.push(o);
-  localStorage.setItem('orders',JSON.stringify(orders));
+  if(editOrderIdx>=0){
+    orders[editOrderIdx]=o;
+    saveAllOrders();
+  } else {
+    orders.push(o);
+    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',row:[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status]})}).catch(()=>{});
+  }
   closeModal('modalOrder');renderOrders();
-  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',row:[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status]})}).catch(()=>{});
 }
 
 function renderCalls(){
@@ -768,6 +817,14 @@ function copyText(){
   });
 }
 
+function saveAllOrders(){
+  const rows=orders.map(o=>[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status]);
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',action:'replace_all',rows})}).catch(()=>{});
+}
+function saveAllCalls(){
+  const rows=calls.map(c=>[c.date,c.orderId,c.phone,c.carrierName,c.price,c.result,c.comment]);
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',action:'replace_all',rows})}).catch(()=>{});
+}
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['carriers','orders','calls','gen'][i]===tab));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -795,8 +852,7 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 document.getElementById('fabBtn').onclick=openAddCarrier;
-loadCarriers();
-renderOrders();
+loadAll();
 </script>
 </body>
 </html>
