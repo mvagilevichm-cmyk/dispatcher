@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта Заявок - Тест</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #1a1a1a; color: white; }
+        #map { height: 80vh; width: 100%; }
+        .controls { padding: 15px; background: #222; display: flex; gap: 20px; align-items: center; }
+        .legend { font-size: 14px; }
+        .filter-group { display: flex; flex-direction: column; }
+        select, input { padding: 5px; border-radius: 4px; border: none; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="filter-group">
+        <label>Дата рейса:</label>
+        <input type="date" id="dateFilter" value="2026-03-30">
+    </div>
+    <div class="filter-group">
+        <label>Тип авто:</label>
+        <select id="typeFilter">
+            <option value="all">Все типы</option>
+            <option value="зерновоз">Зерновоз</option>
+            <option value="тент">Тент</option>
+        </select>
+    </div>
+    <div class="legend">
+        <b>Подсказка:</b> Синие линии — это твои текущие заявки.
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // 1. Инициализация карты (Центр на Украине)
+    const map = L.map('map').setView([48.3794, 31.1656], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // 2. Тестовые данные (Потом они будут браться из твоей базы)
+    const orders = [
+        { id: 1, from: [50.4501, 30.5234], to: [46.4825, 30.7233], date: '2026-03-30', type: 'зерновоз', info: 'Пшеница, 22т' }, // Киев - Одесса
+        { id: 2, from: [49.9935, 36.2304], to: [48.4647, 35.0462], date: '2026-03-30', type: 'тент', info: 'Запчасти, 5т' },    // Харьков - Днепр
+        { id: 3, from: [49.8397, 24.0297], to: [50.4501, 30.5234], date: '2026-03-31', type: 'зерновоз', info: 'Ячмень, 20т' }  // Львов - Киев
+    ];
+
+    let layers = [];
+
+    function drawOrders() {
+        // Очищаем старые линии
+        layers.forEach(layer => map.removeLayer(layer));
+        layers = [];
+
+        const selectedDate = document.getElementById('dateFilter').value;
+        const selectedType = document.getElementById('typeFilter').value;
+
+        orders.forEach(order => {
+            if ((order.date === selectedDate) && (selectedType === 'all' || order.type === selectedType)) {
+                
+                // Рисуем маркеры начала и конца
+                const startMarker = L.circleMarker(order.from, {color: 'green', radius: 5}).addTo(map).bindPopup("Откуда: " + order.info);
+                const endMarker = L.circleMarker(order.to, {color: 'red', radius: 5}).addTo(map).bindPopup("Куда");
+                
+                // Рисуем линию (маршрут)
+                const line = L.polyline([order.from, order.to], {
+                    color: order.type === 'зерновоз' ? '#ffd700' : '#3498db',
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map);
+
+                layers.push(startMarker, endMarker, line);
+            }
+        });
+    }
+
+    // Слушатели фильтров
+    document.getElementById('dateFilter').onchange = drawOrders;
+    document.getElementById('typeFilter').onchange = drawOrders;
+
+    // Первый запуск
+    drawOrders();
+</script>
+
+</body>
+</html>
