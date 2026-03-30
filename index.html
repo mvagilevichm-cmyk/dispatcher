@@ -101,10 +101,29 @@
 </style>
 </head>
 <body>
+<datalist id="ua-cities">
+<option>Киев</option><option>Харьков</option><option>Одесса</option><option>Днепр</option>
+<option>Запорожье</option><option>Львов</option><option>Николаев</option><option>Винница</option>
+<option>Херсон</option><option>Полтава</option><option>Чернигов</option><option>Черкассы</option>
+<option>Житомир</option><option>Сумы</option><option>Хмельницкий</option><option>Ровно</option>
+<option>Ивано-Франковск</option><option>Тернополь</option><option>Луцк</option><option>Ужгород</option>
+<option>Черновцы</option><option>Кропивницкий</option><option>Белая Церковь</option><option>Кременчуг</option>
+<option>Мелитополь</option><option>Никополь</option><option>Бердянск</option><option>Краматорск</option>
+<option>Славянск</option><option>Лисичанск</option><option>Северодонецк</option><option>Конотоп</option>
+<option>Шостка</option><option>Коломыя</option><option>Дрогобыч</option><option>Стрый</option>
+<option>Ковель</option><option>Умань</option><option>Бердичев</option><option>Фастов</option>
+<option>Бровары</option><option>Борисполь</option><option>Буча</option><option>Ирпень</option>
+<option>Каховка</option><option>Скадовск</option><option>Вознесенск</option><option>Первомайск</option>
+<option>Измаил</option><option>Белгород-Днестровский</option><option>Балта</option><option>Котовск</option>
+<option>Христиновка</option><option>Черноморск</option><option>Южное</option><option>Прилуки</option>
+<option>Нежин</option><option>Канев</option><option>Золотоноша</option><option>Смела</option>
+<option>Коростень</option><option>Новоград-Волынский</option><option>Бар</option><option>Жмеринка</option>
+<option>Могилев-Подольский</option><option>Казатин</option><option>Кривой Рог</option>
+</datalist>
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v17</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v27</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -113,7 +132,7 @@
     <div class="tab" onclick="switchTab('gen')">Рассылка</div>
   </div>
   <div class="search-bar" id="searchBar">
-    <input type="text" id="searchInput" placeholder="Поиск по городу или имени..." oninput="renderCarriers()">
+    <input type="text" id="searchInput" placeholder="Поиск по городу, имени, телефону..." oninput="renderCarriers()" list="ua-cities" autocomplete="off">
     <select id="typeFilter" onchange="renderCarriers()">
       <option value="">Все типы</option>
       <option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option>
@@ -136,6 +155,7 @@
         <button class="filter-chip" onclick="setStatusFilter('Проблемний',this)">Проблемные</button>
         <button class="filter-chip" onclick="setStatusFilter('Невідомий',this)">Неизвестные</button>
       </div>
+      <div id="matchBanner" style="display:none;background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--accent);margin-bottom:10px"></div>
       <div class="count-line" id="countLine"></div>
       <div id="carrierList"></div>
     </div>
@@ -194,7 +214,7 @@
   <div class="modal">
     <div class="modal-title">Новый перевозчик</div>
     <div class="form-row"><label>Имя</label><input type="text" id="c-name" placeholder="Василий К."></div>
-    <div class="form-row"><label>Базировка (город)</label><input type="text" id="c-city" placeholder="Винница"></div>
+    <div class="form-row"><label>Базировка (город)</label><input type="text" id="c-city" placeholder="Винница" list="ua-cities" autocomplete="off"></div>
     <div class="group-label">Транспорт</div>
     <div id="c-vehicles">
       <div class="form-row-2 c-vehicle-row">
@@ -238,12 +258,12 @@
     </div>
     <div class="group-label">Откуда</div>
     <div class="form-row-2">
-      <div class="form-row" style="margin:0"><label>Город</label><input type="text" id="o-from-city" placeholder="Винница"></div>
+      <div class="form-row" style="margin:0"><label>Город</label><input type="text" id="o-from-city" placeholder="Винница" list="ua-cities" autocomplete="off"></div>
       <div class="form-row" style="margin:0"><label>Село</label><input type="text" id="o-from-village" placeholder="с. Браилов"></div>
     </div>
     <div class="group-label">Куда</div>
     <div class="form-row-2">
-      <div class="form-row" style="margin:0"><label>Город</label><input type="text" id="o-to-city" placeholder="Одесса"></div>
+      <div class="form-row" style="margin:0"><label>Город</label><input type="text" id="o-to-city" placeholder="Одесса" list="ua-cities" autocomplete="off"></div>
       <div class="form-row" style="margin:0"><label>Село</label><input type="text" id="o-to-village" placeholder="с. Затока"></div>
     </div>
     <div class="form-row" style="margin-top:8px"><label>Расстояние (км)</label><input type="number" id="o-dist" placeholder="310"></div>
@@ -316,18 +336,16 @@ let editCallIdx=-1;
 let dataLoaded=false;
 
 function rawPhone(raw){
-  // Returns phone as digits only starting with 0: 0981234567
+  // Write only digits to avoid Google Sheets formula error
   const s=String(raw||'').trim();
   if(!s)return '';
   let v=s.replace(/\D/g,'');
-  if(v.startsWith('380'))v='0'+v.slice(3);
-  else if(v.startsWith('38'))v='0'+v.slice(2);
-  else if(v.startsWith('0'))v=v;
-  else if(v.length===9)v='0'+v;
-  else if(v.length===10&&!v.startsWith('0'))v='0'+v.slice(1);
-  // ensure starts with 0 and is 10 digits
-  if(!v.startsWith('0'))v='0'+v;
-  return v.slice(0,10);
+  // ensure starts with 380
+  if(v.startsWith('380'))return v;
+  if(v.startsWith('38'))return v;
+  if(v.startsWith('0'))return '38'+v;
+  if(v.length===9)return '380'+v;
+  return '38'+v;
 }
 function fmtDate(d){
   if(!d&&d!==0)return '';
@@ -356,20 +374,20 @@ function formatPhone(id){
 function fullPhone(raw){
   const s=String(raw||'').trim();
   if(!s)return '';
-  // strip all non-digits
   let v=s.replace(/\D/g,'');
   if(!v)return s;
-  // normalize to 10 digits (UA format starting with 0)
-  if(v.startsWith('380'))v=v.slice(2); // 380xx -> 0xx
-  else if(v.startsWith('38'))v=v.slice(2);
-  if(v.length===9)v='0'+v; // 9 digits -> add leading 0
-  if(v.length===10){
-    // format: +38 (0XX) XXX X XXX
-    const op=v.slice(0,3);
-    const p1=v.slice(3,6);
-    const p2=v.slice(6,7);
-    const p3=v.slice(7,10);
-    return `+38 (${op}) ${p1} ${p2} ${p3}`;
+  // normalize to 380XXXXXXXXX
+  if(v.startsWith('380')&&v.length===12){}
+  else if(v.startsWith('38')&&v.length===11)v='3'+v;
+  else if(v.startsWith('0')&&v.length===10)v='38'+v;
+  else if(v.length===9)v='380'+v;
+  // format +38(0XX)XXX X XXX
+  if(v.length>=12){
+    const op=v.slice(2,5); // 0XX
+    const p1=v.slice(5,8);
+    const p2=v.slice(8,9);
+    const p3=v.slice(9,12);
+    return `+38(${op})${p1} ${p2} ${p3}`;
   }
   return '+38'+v;
 }
@@ -377,11 +395,10 @@ function phoneForCall(raw){return String(raw||'').replace(/\s/g,'').replace(/[()
 function phoneKey(raw){return String(raw||'').replace(/\D/g,'');}
 function normalizePhone(raw){
   let v=String(raw||'').replace(/\D/g,'');
-  // strip leading country codes to get 10-digit UA number
   if(v.startsWith('380'))v=v.slice(3);
   else if(v.startsWith('38'))v=v.slice(2);
   if(v.startsWith('0'))v=v.slice(1);
-  return v; // returns 9 digits: 671112233
+  return v; // 9 digits
 }
 
 async function loadAll(){
@@ -430,7 +447,7 @@ async function loadAll(){
     calls=clData.filter(r=>r['Дата']||r['№ заявки']).map(r=>({
       date:fmtDate(String(r['Дата']||'').trim()),
       orderId:String(r['№ заявки']||'').trim(),
-      phone:String(r['Телефон для CRM']||r['Телефон']||'').trim(),
+      phone:String(r['Телефон для CRM']||r['Телефон']||'').trim().replace(/^\s+/,''),
       carrierName:String(r['Перевозчик']||'').trim(),
       price:String(r['Цена']||'').trim(),
       result:String(r['Результат']||'').trim(),
@@ -531,9 +548,31 @@ function clearFilters(){
 function renderCarriers(){
   const q=document.getElementById('searchInput').value.trim().toLowerCase();
   const type=document.getElementById('typeFilter').value;
+  const os=window._orderSearch;
   let filtered=carriers.filter(c=>{
-    const mQ=!q||c.name.toLowerCase().includes(q)||c.city.toLowerCase().includes(q)||c.phone.includes(q);
-    const typeMap={'Самосвал':['самосвал','самаскид','самаскiд'],'Тент':['тент','тенд'],'Рефрижератор':['рефрижератор','реф'],'Цистерна':['цистерна','цыстерна'],'Бортовой':['бортовой','бортовые'],'Зерновоз':['зерновоз'],'Щеповоз':['щеповоз']};
+    if(os){
+      // order match mode: city must match fromCity only (where cargo loads)
+      const city=c.city.toLowerCase();
+      const mCity=!os.fromCity||city.includes(os.fromCity)||(os.fromCity.length>2&&os.fromCity.includes(city)&&city.length>2);
+      if(!mCity)return false;
+      // optional truck filter
+      if(type){
+        const typeMap={'Самосвал':['самосвал','самаскид'],'Тент':['тент','тенд'],'Рефрижератор':['рефрижератор','реф'],'Цистерна':['цистерна','цыстерна'],'Бортовой':['бортовой','бортовые'],'Зерновоз':['зерновоз'],'Щеповоз':['щеповоз']};
+        const aliases=typeMap[type]||[type.toLowerCase()];
+        if(!aliases.some(a=>c.type.toLowerCase().includes(a)))return false;
+      }
+      return true;
+    }
+    const qDigits=q.replace(/\D/g,'');
+    const phoneDigits=c.phone.replace(/\D/g,'');
+    // strip leading country code from query for flexible matching
+    let qStripped=qDigits;
+    if(qStripped.startsWith('380'))qStripped=qStripped.slice(3);
+    else if(qStripped.startsWith('38'))qStripped=qStripped.slice(2);
+    if(qStripped.startsWith('0'))qStripped=qStripped.slice(1);
+    const mPhone=qDigits.length>0&&(phoneDigits.includes(qDigits)||phoneDigits.slice(3).includes(qStripped));
+    const mQ=!q||c.name.toLowerCase().includes(q)||c.city.toLowerCase().includes(q)||mPhone;
+    const typeMap={'Самосвал':['самосвал','самаскид'],'Тент':['тент','тенд'],'Рефрижератор':['рефрижератор','реф'],'Цистерна':['цистерна','цыстерна'],'Бортовой':['бортовой','бортовые'],'Зерновоз':['зерновоз'],'Щеповоз':['щеповоз']};
     const aliases=typeMap[type]||[type.toLowerCase()];
     const mT=!type||aliases.some(a=>c.type.toLowerCase().includes(a));
     const mS=!statusFilter||c.status===statusFilter;
@@ -678,7 +717,7 @@ function openEditCall(idx){
   editCallIdx=idx;const c=calls[idx];
   document.getElementById('callModalTitle').textContent='Редактировать звонок';
   document.getElementById('cl-del-btn').style.display='block';
-  document.getElementById('cl-phone').value=c.phone||'';
+  document.getElementById('cl-phone').value=fullPhone(c.phone||'');
   document.getElementById('cl-call-btn').href='tel:'+phoneForCall(c.phone||'');
   document.getElementById('cl-name').value=c.carrierName||'';
   document.getElementById('cl-order').value=c.orderId||'';
@@ -736,9 +775,10 @@ function renderOrders(){
         ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 8px;background:var(--surface2);border-radius:5px">📝 ${o.note}</div>`:''}
         <div class="order-footer">
           <span class="badge ${sc}">${o.status}</span>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
-            <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})">✎ Редакт.</button>
+            <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})">✎</button>
+            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}')">🔍 Найти</button>
           </div>
         </div>
       </div>
@@ -887,6 +927,27 @@ function copyText(){
   });
 }
 
+function findCarriersForOrder(fromCity, toCity, truck){
+  switchTab('carriers');
+  // clear search and use special order match mode
+  document.getElementById('searchInput').value='';
+  document.getElementById('typeFilter').value='';
+  statusFilter='';
+  document.querySelectorAll('.filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  // store order search params globally
+  window._orderSearch={fromCity:fromCity.toLowerCase(),toCity:toCity.toLowerCase(),truck:truck};
+  renderCarriers();
+  const banner=document.getElementById('matchBanner');
+  if(banner){
+    banner.innerHTML=`🔍 Перевозчики из: <b>${fromCity}</b>${truck?' · '+truck:''} &nbsp;<button onclick="clearOrderSearch()" style="font-size:11px;background:transparent;border:none;color:var(--accent);cursor:pointer">✕ Сбросить</button>`;
+    banner.style.display='block';
+  }
+}
+function clearOrderSearch(){
+  window._orderSearch=null;
+  document.getElementById('matchBanner').style.display='none';
+  renderCarriers();
+}
 function saveAllOrders(){
   const rows=orders.map(o=>[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status]);
   fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',action:'replace_all',rows})}).catch(()=>{});
