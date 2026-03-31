@@ -82,6 +82,7 @@
   .chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:transparent;transition:all .15s}
   .chip.active{background:rgba(79,124,255,.15);border-color:var(--accent);color:var(--accent)}
   .callback-panel{background:rgba(255,184,77,.07);border:1px solid rgba(255,184,77,.3);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:none}
+  .active-order-card{background:rgba(79,124,255,.07);border:1px solid rgba(79,124,255,.3);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:none}
   .callback-panel.open{display:block}
   .callback-item{padding:10px 0;border-bottom:1px solid var(--border)}
   .callback-item:last-child{border-bottom:none}
@@ -123,7 +124,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v29</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v32</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -147,6 +148,7 @@
         <div class="stat"><div class="stat-num" id="stat-reliable" style="color:var(--green)">0</div><div class="stat-label">Надёжных</div></div>
         <div class="stat" onclick="toggleCallback()"><div class="stat-num" id="stat-callback" style="color:var(--yellow)">0</div><div class="stat-label">Перезвонить</div></div>
       </div>
+      <div class="active-order-card" id="activeOrderCard"></div>
       <div class="callback-panel" id="callbackPanel"></div>
       <div class="filter-row">
         <button class="filter-chip active" onclick="setStatusFilter('',this)">Все</button>
@@ -631,7 +633,7 @@ function renderCarriers(){
         ${hidHTML}
         <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
           <a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a>
-          <button class="add-call-btn" style="width:auto;padding:5px 12px;font-size:11px;margin:0" onclick="openAddCallForCarrier('${sp}','${sn}')">+ Звонок</button>
+          <button class="add-call-btn" style="width:auto;padding:5px 12px;font-size:11px;margin:0" onclick="openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')">+ Звонок</button>
         </div>
       </div>
       <div class="card-body" id="body-${key}">
@@ -642,7 +644,7 @@ function renderCarriers(){
         <div class="card-section">
           <div class="section-label">Все звонки</div>
           ${cCalls.length?cCalls.map(cl=>{const ri=calls.indexOf(cl);const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';return `<div class="history-item"><div class="h-row1"><div><span style="font-size:12px;font-weight:600;color:var(--accent);font-family:var(--mono)">#${cl.orderId}</span><span style="font-size:11px;color:var(--text3);margin-left:8px">${cl.date}</span></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${rc}">${icon} ${cl.result}</span><button class="edit-btn" onclick="openEditCall(${ri})">✎</button></div></div>${cl.price?`<div style="font-size:12px;color:var(--accent2);font-family:var(--mono)">${cl.price} грн</div>`:''} ${cl.comment?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${cl.comment}</div>`:''}</div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);padding:6px 0">Звонков нет</div>'}
-          <button class="add-call-btn" style="margin-top:8px" onclick="openAddCallForCarrier('${sp}','${sn}')">+ Добавить звонок</button>
+          <button class="add-call-btn" style="margin-top:8px" onclick="openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')">+ Добавить звонок</button>
         </div>
       </div>
     </div>`;
@@ -746,9 +748,15 @@ function openAddCall(){
   openModal('modalCall');
 }
 function openAddCallWithOrder(orderId){
-  openAddCall();
+  editCallIdx=-1;
+  document.getElementById('callModalTitle').textContent='Добавить звонок';
+  document.getElementById('cl-del-btn').style.display='none';
+  ['cl-phone','cl-name','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-result').value='Взял';
+  document.getElementById('cl-call-btn').href='';
   document.getElementById('cl-order').value=orderId||'';
-  updateOrderPreview();
+  openModal('modalCall');
+  setTimeout(updateOrderPreview, 50);
 }
 function openEditCall(idx){
   editCallIdx=idx;const c=calls[idx];
@@ -818,7 +826,7 @@ function renderOrders(){
           <span class="badge ${sc}">${o.status}</span>
           <div style="display:flex;gap:6px;align-items:center">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
-            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}')">🔍 Найти</button>
+            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
           </div>
         </div>
       </div>
@@ -993,25 +1001,45 @@ function copyText(){
   });
 }
 
-function findCarriersForOrder(fromCity, toCity, truck){
+function findCarriersForOrder(fromCity, toCity, truck, orderNum){
   switchTab('carriers');
-  // clear search and use special order match mode
   document.getElementById('searchInput').value='';
   document.getElementById('typeFilter').value='';
   statusFilter='';
   document.querySelectorAll('.filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
-  // store order search params globally
-  window._orderSearch={fromCity:fromCity.toLowerCase(),toCity:toCity.toLowerCase(),truck:truck};
+  window._orderSearch={fromCity:fromCity.toLowerCase(),toCity:toCity.toLowerCase(),truck:truck,orderNum:orderNum};
   renderCarriers();
+  // show match banner
   const banner=document.getElementById('matchBanner');
   if(banner){
     banner.innerHTML=`🔍 Перевозчики из: <b>${fromCity}</b>${truck?' · '+truck:''} &nbsp;<button onclick="clearOrderSearch()" style="font-size:11px;background:transparent;border:none;color:var(--accent);cursor:pointer">✕ Сбросить</button>`;
     banner.style.display='block';
   }
+  // show active order card
+  if(orderNum){
+    const o=orders.find(x=>String(x.num)===String(orderNum));
+    const card=document.getElementById('activeOrderCard');
+    if(o&&card){
+      card.style.display='block';
+      card.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">Заявка #${o.num}</span>
+          <button onclick="clearOrderSearch()" style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+        </div>
+        ${o.cargo?`<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}${o.weight?' · '+o.weight:''}</div>`:''}
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}${o.dist?' · '+o.dist+' км':''}</div>
+        ${(o.start||o.end)?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${o.start||'?'} — ${o.end||'?'}</div>`:''}
+        <div style="display:flex;gap:8px">
+          ${o.priceNds?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">НДС </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceNds} грн</span></div>`:''}
+          ${o.priceFop?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">ФОП </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceFop} грн</span></div>`:''}
+        </div>`;
+    }
+  }
 }
 function clearOrderSearch(){
   window._orderSearch=null;
   document.getElementById('matchBanner').style.display='none';
+  document.getElementById('activeOrderCard').style.display='none';
   renderCarriers();
 }
 function saveAllOrders(){
