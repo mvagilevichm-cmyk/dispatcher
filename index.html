@@ -123,7 +123,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v27</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v29</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -303,7 +303,11 @@
 <div class="modal-bg" id="modalCall">
   <div class="modal">
     <div class="modal-title" id="callModalTitle">Добавить звонок</div>
-    <div class="form-row"><label>№ заявки</label><input type="text" id="cl-order" placeholder="1" style="font-size:16px;font-weight:600;color:var(--accent);font-family:var(--mono)"></div>
+    <div class="form-row">
+      <label>№ заявки</label>
+      <input type="text" id="cl-order" placeholder="1" style="font-size:16px;font-weight:600;color:var(--accent);font-family:var(--mono)" oninput="updateOrderPreview()">
+    </div>
+    <div id="cl-order-preview" style="display:none;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent)"></div>
     <div class="form-row">
       <label>Телефон перевозчика</label>
       <div style="display:flex;gap:8px;align-items:center">
@@ -692,7 +696,31 @@ function getSelectedTrucks(){return[...document.querySelectorAll('#truckChips .c
 function setSelectedTrucks(val){const vals=(val||'').split(',').map(v=>v.trim());document.querySelectorAll('#truckChips .chip').forEach(el=>el.classList.toggle('active',vals.includes(el.textContent.trim())));}
 function nextOrderNum(){if(!orders.length)return 1;return Math.max(...orders.map(o=>parseInt(o.num)||0))+1;}
 
-function openAddCallForCarrier(phone,name){
+function updateOrderPreview(){
+  const num=document.getElementById('cl-order').value.trim();
+  const preview=document.getElementById('cl-order-preview');
+  if(!num){preview.style.display='none';return;}
+  const o=orders.find(x=>String(x.num)===num);
+  if(!o){preview.style.display='none';return;}
+  const sc=o.status==='Актуально'?'var(--green)':o.status==='Закрыта'?'var(--gray)':o.status==='На паузе'?'var(--yellow)':'var(--red)';
+  preview.style.display='block';
+  preview.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">#${o.num}</span>
+      <span style="font-size:11px;color:${sc};font-weight:500">${o.status}</span>
+    </div>
+    ${o.cargo?`<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}${o.weight?' · '+o.weight:''}</div>`:''}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}${o.dist?' · '+o.dist+' км':''}</div>
+    ${(o.start||o.end)?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">${o.start||'?'} — ${o.end||'?'}</div>`:''}
+    <div style="display:flex;gap:8px">
+      ${o.priceNds?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">НДС </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceNds} грн</span></div>`:''}
+      ${o.priceFop?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">ФОП </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceFop} грн</span></div>`:''}
+    </div>
+    ${o.truck?`<div style="font-size:11px;color:var(--text3);margin-top:4px">${o.truck}</div>`:''}
+    ${o.note?`<div style="font-size:11px;color:var(--text2);margin-top:4px;padding:4px 6px;background:var(--surface);border-radius:4px">📝 ${o.note}</div>`:''}
+  `;
+}
+function openAddCallForCarrier(phone,name,orderId){
   editCallIdx=-1;
   document.getElementById('callModalTitle').textContent='Добавить звонок';
   document.getElementById('cl-del-btn').style.display='none';
@@ -700,9 +728,12 @@ function openAddCallForCarrier(phone,name){
   document.getElementById('cl-phone').value=ph;
   document.getElementById('cl-call-btn').href='tel:'+phoneForCall(ph);
   document.getElementById('cl-name').value=name;
-  ['cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-order').value=orderId||'';
+  document.getElementById('cl-price').value='';
+  document.getElementById('cl-comment').value='';
   document.getElementById('cl-result').value='Взял';
   openModal('modalCall');
+  updateOrderPreview();
 }
 function openAddCall(){
   editCallIdx=-1;
@@ -711,7 +742,13 @@ function openAddCall(){
   ['cl-phone','cl-name','cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
   document.getElementById('cl-call-btn').href='';
+  document.getElementById('cl-order-preview').style.display='none';
   openModal('modalCall');
+}
+function openAddCallWithOrder(orderId){
+  openAddCall();
+  document.getElementById('cl-order').value=orderId||'';
+  updateOrderPreview();
 }
 function openEditCall(idx){
   editCallIdx=idx;const c=calls[idx];
@@ -721,6 +758,7 @@ function openEditCall(idx){
   document.getElementById('cl-call-btn').href='tel:'+phoneForCall(c.phone||'');
   document.getElementById('cl-name').value=c.carrierName||'';
   document.getElementById('cl-order').value=c.orderId||'';
+  setTimeout(updateOrderPreview,50);
   document.getElementById('cl-price').value=c.price||'';
   document.getElementById('cl-result').value=c.result||'Взял';
   document.getElementById('cl-comment').value=c.comment||'';
@@ -755,9 +793,12 @@ function renderOrders(){
     const oc=calls.filter(c=>c.orderId===o.num);
     return `<div class="order-card">
       <div class="order-head" onclick="toggleOrder(${idx})">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px">
-          <div class="order-num-big">#${o.num}</div>
-          <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <div class="order-num-big">#${o.num}</div>
+            <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
+          </div>
+          <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button>
         </div>
         ${o.cargo?`<div class="order-cargo-big">${o.cargo}</div>`:''}
         ${o.weight?`<span class="order-weight-tag">${o.weight}</span>`:''}
@@ -775,17 +816,42 @@ function renderOrders(){
         ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 8px;background:var(--surface2);border-radius:5px">📝 ${o.note}</div>`:''}
         <div class="order-footer">
           <span class="badge ${sc}">${o.status}</span>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:6px;align-items:center">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
-            <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})">✎</button>
             <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}')">🔍 Найти</button>
           </div>
         </div>
       </div>
       <div class="order-body" id="obody-${idx}">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:var(--mono);text-transform:uppercase">Звонки по заявке</div>
-        ${oc.length?oc.map(cl=>{const ri2=calls.indexOf(cl);const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';return `<div class="history-item"><div class="h-row1"><span style="font-size:12px;font-weight:500">${cl.carrierName}</span><div style="display:flex;gap:6px"><span class="badge ${rc}">${cl.result}</span><button class="edit-btn" onclick="openEditCall(${ri2})">✎</button></div></div><div class="h-detail">${cl.date}${cl.price?' · '+cl.price+' грн':''} ${cl.comment||''}</div></div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Звонков нет</div>'}
-        <button class="add-call-btn" style="margin-top:8px" onclick="openAddCall()">+ Добавить звонок</button>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Звонки по заявке</div>
+        ${oc.length?oc.map(cl=>{
+          const ri2=calls.indexOf(cl);
+          const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';
+          const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';
+          const ph=fullPhone(cl.phone||'');
+          const pk=phoneForCall(cl.phone||'');
+          return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <div>
+                <div style="font-size:13px;font-weight:500">${cl.carrierName}</div>
+                <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">${ph}</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="badge ${rc}">${icon} ${cl.result}</span>
+                <button class="edit-btn" onclick="openEditCall(${ri2})">✎</button>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <span style="font-size:11px;color:var(--text3)">${cl.date}</span>
+                ${cl.price?`<span style="font-size:12px;color:var(--accent2);font-family:var(--mono);margin-left:8px">${cl.price} грн</span>`:''}
+              </div>
+              <a class="call-btn" href="tel:${pk}" style="font-size:11px;padding:3px 10px">📞</a>
+            </div>
+            ${cl.comment?`<div style="font-size:12px;color:var(--text2);margin-top:4px;padding:4px 8px;background:var(--surface2);border-radius:4px">${cl.comment}</div>`:''}
+          </div>`;
+        }).join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Звонков нет</div>'}
+        <button class="add-call-btn" style="margin-top:10px" onclick="openAddCallWithOrder('${o.num}')">+ Добавить звонок</button>
       </div>
     </div>`;
   }).join('');
