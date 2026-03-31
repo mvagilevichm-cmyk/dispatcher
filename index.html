@@ -124,7 +124,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v32</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v33</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -317,7 +317,26 @@
         <a id="cl-call-btn" href="" style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:7px 14px;font-size:13px;text-decoration:none;white-space:nowrap">📞 Звонить</a>
       </div>
     </div>
-    <div class="form-row"><label>Имя перевозчика</label><input type="text" id="cl-name" placeholder="Василий К."></div>
+    <div class="form-row"><label>Имя перевозчика</label><input type="text" id="cl-name" placeholder="Василий К." oninput="updateCarrierPreview()"></div>
+    <div style="margin-bottom:8px">
+      <button onclick="toggleCarrierPreview()" style="font-size:12px;color:var(--accent);background:transparent;border:1px solid rgba(79,124,255,.3);border-radius:6px;padding:5px 12px;cursor:pointer;width:100%;text-align:left" id="carrierPreviewBtn">▼ Показать карточку перевозчика</button>
+      <div id="carrierPreviewBlock" style="display:none;margin-top:8px;background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px">Данные перевозчика</div>
+        <div class="form-row" style="margin-bottom:6px"><label>Имя</label><input type="text" id="cp-name" placeholder="Василий К."></div>
+        <div class="form-row" style="margin-bottom:6px"><label>Базировка</label><input type="text" id="cp-city" placeholder="Винница" list="ua-cities" autocomplete="off"></div>
+        <div class="form-row-2" style="margin-bottom:6px">
+          <div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" id="cp-cars" placeholder="3"></div>
+          <div class="form-row" style="margin:0"><label>Тип машины</label>
+            <select id="cp-type"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:6px"><label>Статус</label>
+          <select id="cp-status"><option>Неизвестный</option><option>Надёжный</option><option>Нейтральный</option><option>Проблемный</option></select>
+        </div>
+        <div class="form-row" style="margin-bottom:6px"><label>Комментарий</label><textarea id="cp-comment" placeholder="Примечание..." style="min-height:40px"></textarea></div>
+        <button onclick="saveCarrierFromCall()" class="btn-save" style="width:100%;padding:8px;font-size:12px">Сохранить изменения перевозчика</button>
+      </div>
+    </div>
     <div class="form-row"><label>Предложенная цена (грн)</label><input type="number" id="cl-price" placeholder="18000"></div>
     <div class="form-row"><label>Результат</label>
       <select id="cl-result"><option>Взял</option><option>Отказал</option><option>Перезвонить</option><option>Думает</option></select>
@@ -736,6 +755,8 @@ function openAddCallForCarrier(phone,name,orderId){
   document.getElementById('cl-result').value='Взял';
   openModal('modalCall');
   updateOrderPreview();
+  document.getElementById('carrierPreviewBlock').style.display='none';
+  document.getElementById('carrierPreviewBtn').textContent='▼ Показать карточку перевозчика';
 }
 function openAddCall(){
   editCallIdx=-1;
@@ -745,6 +766,8 @@ function openAddCall(){
   document.getElementById('cl-result').value='Взял';
   document.getElementById('cl-call-btn').href='';
   document.getElementById('cl-order-preview').style.display='none';
+  document.getElementById('carrierPreviewBlock').style.display='none';
+  document.getElementById('carrierPreviewBtn').textContent='▼ Показать карточку перевозчика';
   openModal('modalCall');
 }
 function openAddCallWithOrder(orderId){
@@ -1041,6 +1064,43 @@ function clearOrderSearch(){
   document.getElementById('matchBanner').style.display='none';
   document.getElementById('activeOrderCard').style.display='none';
   renderCarriers();
+}
+function toggleCarrierPreview(){
+  const block=document.getElementById('carrierPreviewBlock');
+  const btn=document.getElementById('carrierPreviewBtn');
+  const open=block.style.display!=='none';
+  block.style.display=open?'none':'block';
+  btn.textContent=open?'▼ Показать карточку перевозчика':'▲ Скрыть карточку перевозчика';
+  if(!open)updateCarrierPreview();
+}
+function updateCarrierPreview(){
+  const phone=document.getElementById('cl-phone').value;
+  const name=document.getElementById('cl-name').value;
+  const c=carriers.find(x=>normalizePhone(x.phone)===normalizePhone(phone)||x.name===name);
+  if(!c)return;
+  document.getElementById('cp-name').value=c.name||'';
+  document.getElementById('cp-city').value=c.city||'';
+  document.getElementById('cp-cars').value=c.cars||'';
+  document.getElementById('cp-type').value=c.type||'Зерновоз';
+  document.getElementById('cp-status').value=c.status==='Надійний'?'Надёжный':c.status==='Нейтральний'?'Нейтральный':c.status==='Проблемний'?'Проблемный':'Неизвестный';
+  document.getElementById('cp-comment').value=c.comment||'';
+}
+function saveCarrierFromCall(){
+  const phone=document.getElementById('cl-phone').value;
+  const idx=carriers.findIndex(x=>normalizePhone(x.phone)===normalizePhone(phone));
+  if(idx===-1){alert('Перевозчик не найден в базе');return;}
+  carriers[idx].name=document.getElementById('cp-name').value.trim();
+  carriers[idx].city=document.getElementById('cp-city').value.trim();
+  carriers[idx].cars=document.getElementById('cp-cars').value.trim();
+  carriers[idx].type=document.getElementById('cp-type').value;
+  carriers[idx].status=document.getElementById('cp-status').value;
+  carriers[idx].comment=document.getElementById('cp-comment').value.trim();
+  // sync name in call form
+  document.getElementById('cl-name').value=carriers[idx].name;
+  // save to sheets
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Перевозчики',row:[carriers[idx].name,carriers[idx].city,carriers[idx].cars,carriers[idx].type,carriers[idx].phone,carriers[idx].status,carriers[idx].comment||'']})}).catch(()=>{});
+  renderCarriers();
+  alert('Сохранено!');
 }
 function saveAllOrders(){
   const rows=orders.map(o=>[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status]);
