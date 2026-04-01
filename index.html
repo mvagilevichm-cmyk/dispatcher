@@ -22,7 +22,7 @@
   .search-bar select{width:140px}.search-bar select option{background:var(--surface2)}
   .content{flex:1;overflow-y:auto;padding:12px}
   .section{display:none}.section.active{display:block}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
   .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;cursor:pointer;transition:border-color .15s}
   .stat:hover{border-color:var(--accent)}
   .stat-num{font-size:20px;font-weight:600;font-family:var(--mono);color:var(--accent)}.stat-label{font-size:10px;color:var(--text3);margin-top:2px}
@@ -98,6 +98,14 @@
   .filter-chip.active{background:rgba(79,124,255,.15);border-color:var(--accent);color:var(--accent)}
   .count-line{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px}
   .error-msg{font-size:12px;color:var(--red);margin-top:4px;display:none}
+  
+  .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+  .call-filter-tabs.open{display:flex}
+  .cft-btn{flex:1;min-width:0;padding:8px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);white-space:nowrap}
+  .cft-btn:last-child{border-right:none}
+  .cft-btn.active{background:var(--accent);color:#fff}
+  .cft-btn .cft-count{display:block;font-size:14px;font-weight:600;font-family:var(--mono);margin-bottom:1px}
+
   ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
@@ -124,7 +132,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v33</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v37</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -147,15 +155,19 @@
         <div class="stat" onclick="clearFilters()"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Всего</div></div>
         <div class="stat"><div class="stat-num" id="stat-reliable" style="color:var(--green)">0</div><div class="stat-label">Надёжных</div></div>
         <div class="stat" onclick="toggleCallback()"><div class="stat-num" id="stat-callback" style="color:var(--yellow)">0</div><div class="stat-label">Перезвонить</div></div>
+        <div class="stat" onclick="toggleThinking()"><div class="stat-num" id="stat-thinking" style="color:var(--accent)">0</div><div class="stat-label">Думает</div></div>
       </div>
       <div class="active-order-card" id="activeOrderCard"></div>
       <div class="callback-panel" id="callbackPanel"></div>
-      <div class="filter-row">
-        <button class="filter-chip active" onclick="setStatusFilter('',this)">Все</button>
-        <button class="filter-chip" onclick="setStatusFilter('Надійний',this)">Надёжные</button>
-        <button class="filter-chip" onclick="setStatusFilter('Нейтральний',this)">Нейтральные</button>
-        <button class="filter-chip" onclick="setStatusFilter('Проблемний',this)">Проблемные</button>
-        <button class="filter-chip" onclick="setStatusFilter('Невідомий',this)">Неизвестные</button>
+      <div class="callback-panel" id="thinkingPanel" style="border-color:rgba(79,124,255,.3);background:rgba(79,124,255,.07)"></div>
+
+      <div class="call-filter-tabs" id="callFilterTabs">
+        <button class="cft-btn active" onclick="setCallFilter('all',this)"><span class="cft-count" id="cft-all">0</span>Все</button>
+        <button class="cft-btn" onclick="setCallFilter('none',this)"><span class="cft-count" id="cft-none">0</span>Не обзвонены</button>
+        <button class="cft-btn" onclick="setCallFilter('callback',this)"><span class="cft-count" id="cft-callback">0</span>Перезвонить</button>
+        <button class="cft-btn" onclick="setCallFilter('thinking',this)"><span class="cft-count" id="cft-thinking">0</span>Думает</button>
+        <button class="cft-btn" onclick="setCallFilter('took',this)"><span class="cft-count" id="cft-took">0</span>Взял</button>
+        <button class="cft-btn" onclick="setCallFilter('refused',this)"><span class="cft-count" id="cft-refused">0</span>Отказал</button>
       </div>
       <div id="matchBanner" style="display:none;background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--accent);margin-bottom:10px"></div>
       <div class="count-line" id="countLine"></div>
@@ -337,7 +349,7 @@
         <button onclick="saveCarrierFromCall()" class="btn-save" style="width:100%;padding:8px;font-size:12px">Сохранить изменения перевозчика</button>
       </div>
     </div>
-    <div class="form-row"><label>Предложенная цена (грн)</label><input type="number" id="cl-price" placeholder="18000"></div>
+    
     <div class="form-row"><label>Результат</label>
       <select id="cl-result"><option>Взял</option><option>Отказал</option><option>Перезвонить</option><option>Думает</option></select>
     </div>
@@ -356,6 +368,8 @@ let carriers=[];
 let orders=[];
 let calls=[];
 let statusFilter='';
+let callFilter='all';
+let pinnedOrderNum=localStorage.getItem('pinnedOrder')||'';
 let editOrderIdx=-1;
 let editCallIdx=-1;
 let dataLoaded=false;
@@ -506,6 +520,7 @@ function updateStats(){
   document.getElementById('stat-total').textContent=carriers.length;
   document.getElementById('stat-reliable').textContent=carriers.filter(c=>c.status==='Надійний'||c.status==='Надёжный').length;
   document.getElementById('stat-callback').textContent=calls.filter(c=>c.result==='Перезвонить').length;
+  document.getElementById('stat-thinking').textContent=calls.filter(c=>c.result==='Думает').length;
 }
 
 // СПИСОК ПЕРЕЗВОНИТЬ
@@ -543,6 +558,38 @@ function renderCallback(){
     </div>`;
   }).join('');
 }
+function toggleThinking(){
+  const p=document.getElementById('thinkingPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))renderThinking();
+  else p.innerHTML='';
+}
+function renderThinking(){
+  const cb=calls.map((c,i)=>({...c,idx:i})).filter(c=>c.result==='Думает');
+  const p=document.getElementById('thinkingPanel');
+  if(!cb.length){p.innerHTML='<div style="font-size:13px;color:var(--text3)">Нет звонков со статусом "Думает"</div>';return;}
+  const order_lookup={};
+  orders.forEach(o=>order_lookup[o.num]=o);
+  p.innerHTML='<div style="font-size:11px;color:var(--accent);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px;letter-spacing:.06em">Думает ('+cb.length+')</div>'+
+  cb.map(c=>{
+    const o=order_lookup[c.orderId];
+    const orderInfo=o?`${o.cargo||''} ${o.fromCity||''}→${o.toCity||''}`:'';
+    return `<div class="callback-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px">${c.carrierName}</div>
+          <div style="font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:2px">Заявка #${c.orderId}</div>
+          ${orderInfo?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">${orderInfo}</div>`:''}
+          ${c.comment?`<div style="font-size:11px;color:var(--text3)">${c.comment}</div>`:''}
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${['Взял','Отказал','Перезвонить'].map(r=>`<button onclick="changeCallResult(${c.idx},'${r}',this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">${r}</button>`).join('')}
+          </div>
+        </div>
+        <a class="call-btn" href="tel:${phoneForCall(c.phone||'')}" style="flex-shrink:0">Звонить</a>
+      </div>
+    </div>`;
+  }).join('');
+}
 function changeCallResult(idx,result,btn){
   calls[idx].result=result;
   saveAllCalls();
@@ -561,6 +608,12 @@ function setStatusFilter(val,el){
   statusFilter=val;
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');renderCarriers();
+}
+function setCallFilter(val,el){
+  callFilter=val;
+  document.querySelectorAll('.cft-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderCarriers();
 }
 function clearFilters(){
   statusFilter='';
@@ -603,6 +656,42 @@ function renderCarriers(){
     const mS=!statusFilter||c.status===statusFilter;
     return mQ&&mT&&mS;
   });
+  // Sort and filter by call status when order search is active
+  const os2=window._orderSearch;
+  if(os2&&os2.orderNum){
+    // Calculate call status for each carrier relative to this order
+    filtered.forEach(c=>{
+      const cCalls=calls.filter(cl=>normalizePhone(cl.phone)===normalizePhone(c.phone)&&cl.orderId===os2.orderNum);
+      if(!cCalls.length){c._callStatus='none';}
+      else{
+        const last=cCalls[cCalls.length-1];
+        if(last.result==='Перезвонить')c._callStatus='callback';
+        else if(last.result==='Думает')c._callStatus='thinking';
+        else if(last.result==='Взял')c._callStatus='took';
+        else if(last.result==='Отказал')c._callStatus='refused';
+        else c._callStatus='other';
+      }
+    });
+    // Update tab counts
+    const counts={all:filtered.length,none:0,callback:0,thinking:0,took:0,refused:0};
+    filtered.forEach(c=>{if(counts[c._callStatus]!==undefined)counts[c._callStatus]++;});
+    document.getElementById('cft-all').textContent=counts.all;
+    document.getElementById('cft-none').textContent=counts.none;
+    document.getElementById('cft-callback').textContent=counts.callback;
+    document.getElementById('cft-thinking').textContent=counts.thinking;
+    document.getElementById('cft-took').textContent=counts.took;
+    document.getElementById('cft-refused').textContent=counts.refused;
+    document.getElementById('callFilterTabs').classList.add('open');
+    // Filter by selected tab
+    if(callFilter!=='all'){
+      filtered=filtered.filter(c=>c._callStatus===callFilter);
+    }
+    // Sort: none first, then callback/thinking, then took, then refused
+    const sortOrder={none:0,callback:1,thinking:1,took:2,refused:3,other:2};
+    filtered.sort((a,b)=>(sortOrder[a._callStatus]||0)-(sortOrder[b._callStatus]||0));
+  } else {
+    document.getElementById('callFilterTabs').classList.remove('open');
+  }
   document.getElementById('countLine').textContent=filtered.length?`Найдено: ${filtered.length}`:'';
   const list=document.getElementById('carrierList');
   if(!filtered.length){list.innerHTML='<div class="empty">Перевозчики не найдены</div>';return;}
@@ -651,7 +740,7 @@ function renderCarriers(){
         ${visHTML}
         ${hidHTML}
         <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
-          <a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a>
+          <div style="display:flex;gap:6px;align-items:center"><a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a><button onclick="event.stopPropagation();navigator.clipboard.writeText('${phoneForCall(c.phone)}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)})" style="background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">📋</button></div>
           <button class="add-call-btn" style="width:auto;padding:5px 12px;font-size:11px;margin:0" onclick="openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')">+ Звонок</button>
         </div>
       </div>
@@ -749,7 +838,7 @@ function openAddCallForCarrier(phone,name,orderId){
   document.getElementById('cl-phone').value=ph;
   document.getElementById('cl-call-btn').href='tel:'+phoneForCall(ph);
   document.getElementById('cl-name').value=name;
-  document.getElementById('cl-order').value=orderId||'';
+  document.getElementById('cl-order').value=orderId||pinnedOrderNum||'';
   document.getElementById('cl-price').value='';
   document.getElementById('cl-comment').value='';
   document.getElementById('cl-result').value='Взял';
@@ -765,6 +854,7 @@ function openAddCall(){
   ['cl-phone','cl-name','cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
   document.getElementById('cl-call-btn').href='';
+  document.getElementById('cl-order').value=pinnedOrderNum||'';
   document.getElementById('cl-order-preview').style.display='none';
   document.getElementById('carrierPreviewBlock').style.display='none';
   document.getElementById('carrierPreviewBtn').textContent='▼ Показать карточку перевозчика';
@@ -829,7 +919,7 @@ function renderOrders(){
             <div class="order-num-big">#${o.num}</div>
             <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
           </div>
-          <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button>
+          <div style="display:flex;gap:6px"><button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:14px;background:transparent;border:1px solid ${pinnedOrderNum===o.num?'var(--accent2)':'var(--border)'};border-radius:5px;padding:3px 8px;cursor:pointer;color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">${pinnedOrderNum===o.num?'📌':'📌'}</button><button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button></div>
         </div>
         ${o.cargo?`<div class="order-cargo-big">${o.cargo}</div>`:''}
         ${o.weight?`<span class="order-weight-tag">${o.weight}</span>`:''}
@@ -845,6 +935,9 @@ function renderOrders(){
           ${o.cars?`<span class="order-tag">${o.cars} маш.</span>`:''}
         </div>
         ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 8px;background:var(--surface2);border-radius:5px">📝 ${o.note}</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          ${(()=>{const took=oc.filter(x=>x.result==='Взял').length;const ref=oc.filter(x=>x.result==='Отказал').length;const cb=oc.filter(x=>x.result==='Перезвонить').length;const th=oc.filter(x=>x.result==='Думает').length;return `<span style="font-size:11px;color:var(--green)">✅${took}</span><span style="font-size:11px;color:var(--red)">❌${ref}</span><span style="font-size:11px;color:var(--yellow)">🔄${cb}</span><span style="font-size:11px;color:var(--accent)">🤔${th}</span><span style="font-size:11px;color:var(--text3)">📞${oc.length}</span>`;})()}
+        </div>
         <div class="order-footer">
           <span class="badge ${sc}">${o.status}</span>
           <div style="display:flex;gap:6px;align-items:center">
@@ -1059,8 +1152,14 @@ function findCarriersForOrder(fromCity, toCity, truck, orderNum){
     }
   }
 }
+function togglePinOrder(num){
+  if(pinnedOrderNum===num){pinnedOrderNum='';localStorage.removeItem('pinnedOrder');}
+  else{pinnedOrderNum=num;localStorage.setItem('pinnedOrder',num);}
+  renderOrders();
+}
 function clearOrderSearch(){
   window._orderSearch=null;
+  callFilter='all';
   document.getElementById('matchBanner').style.display='none';
   document.getElementById('activeOrderCard').style.display='none';
   renderCarriers();
@@ -1137,6 +1236,21 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 document.getElementById('fabBtn').onclick=openAddCarrier;
+
+// Swipe navigation
+let _swipeX0=null;
+document.querySelector('.content').addEventListener('touchstart',e=>{_swipeX0=e.touches[0].clientX;},{passive:true});
+document.querySelector('.content').addEventListener('touchend',e=>{
+  if(_swipeX0===null)return;
+  const dx=e.changedTouches[0].clientX-_swipeX0;_swipeX0=null;
+  if(Math.abs(dx)<60)return;
+  const tabs=['carriers','orders','calls','gen'];
+  const cur=tabs.findIndex(t=>document.getElementById('sec-'+t).classList.contains('active'));
+  if(cur===-1)return;
+  const next=dx<0?Math.min(cur+1,tabs.length-1):Math.max(cur-1,0);
+  if(next!==cur)switchTab(tabs[next]);
+},{passive:true});
+
 loadAll();
 </script>
 </body>
