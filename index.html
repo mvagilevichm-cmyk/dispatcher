@@ -101,10 +101,12 @@
   
   .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-wrap:wrap}
   .call-filter-tabs.open{display:flex}
-  .cft-btn{flex:1;min-width:0;padding:8px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);white-space:nowrap}
-  .cft-btn:last-child{border-right:none}
+  .cft-btn{flex:1 1 33.33%;min-width:0;padding:6px 2px;text-align:center;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;box-sizing:border-box}
+  .cft-btn:nth-child(3){border-right:none}
+  .cft-btn:nth-child(6){border-right:none}
+  .cft-btn:nth-child(n+4){border-bottom:none}
   .cft-btn.active{background:var(--accent);color:#fff}
-  .cft-btn .cft-count{display:block;font-size:14px;font-weight:600;font-family:var(--mono);margin-bottom:1px}
+  .cft-btn .cft-count{display:block;font-size:13px;font-weight:600;font-family:var(--mono);margin-bottom:1px}
 
   ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
@@ -132,7 +134,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v37</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v38</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -157,6 +159,7 @@
         <div class="stat" onclick="toggleCallback()"><div class="stat-num" id="stat-callback" style="color:var(--yellow)">0</div><div class="stat-label">Перезвонить</div></div>
         <div class="stat" onclick="toggleThinking()"><div class="stat-num" id="stat-thinking" style="color:var(--accent)">0</div><div class="stat-label">Думает</div></div>
       </div>
+      <div id="pinnedBanner" style="display:none;background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--accent2)"></div>
       <div class="active-order-card" id="activeOrderCard"></div>
       <div class="callback-panel" id="callbackPanel"></div>
       <div class="callback-panel" id="thinkingPanel" style="border-color:rgba(79,124,255,.3);background:rgba(79,124,255,.07)"></div>
@@ -494,7 +497,7 @@ async function loadAll(){
     }));
 
     dataLoaded=true;
-    renderCarriers();updateStats();renderOrders();renderCalls();
+    renderCarriers();updateStats();renderOrders();renderCalls();updatePinnedBanner();
   }catch(e){
     document.getElementById('carrierList').innerHTML='<div class="empty">Не удалось загрузить данные.<br>'+e.message+'</div>';
   }
@@ -614,6 +617,16 @@ function setCallFilter(val,el){
   document.querySelectorAll('.cft-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   renderCarriers();
+}
+function copyPhone(phone,btn){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(phone).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='📋',1500);}).catch(()=>fallbackCopy(phone,btn));
+  } else { fallbackCopy(phone,btn); }
+}
+function fallbackCopy(phone,btn){
+  const ta=document.createElement('textarea');ta.value=phone;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');btn.textContent='✓';setTimeout(()=>btn.textContent='📋',1500);}catch(e){alert('Номер: '+phone);}
+  document.body.removeChild(ta);
 }
 function clearFilters(){
   statusFilter='';
@@ -740,7 +753,7 @@ function renderCarriers(){
         ${visHTML}
         ${hidHTML}
         <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
-          <div style="display:flex;gap:6px;align-items:center"><a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a><button onclick="event.stopPropagation();navigator.clipboard.writeText('${phoneForCall(c.phone)}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)})" style="background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">📋</button></div>
+          <div style="display:flex;gap:6px;align-items:center"><a class="call-btn" href="tel:${phoneForCall(c.phone)}" style="font-size:11px">📞 ${ph}</a><button onclick="event.stopPropagation();copyPhone('${phoneForCall(c.phone)}',this)" style="background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer" title="Скопировать номер">📋</button></div>
           <button class="add-call-btn" style="width:auto;padding:5px 12px;font-size:11px;margin:0" onclick="openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')">+ Звонок</button>
         </div>
       </div>
@@ -919,7 +932,7 @@ function renderOrders(){
             <div class="order-num-big">#${o.num}</div>
             <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
           </div>
-          <div style="display:flex;gap:6px"><button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:14px;background:transparent;border:1px solid ${pinnedOrderNum===o.num?'var(--accent2)':'var(--border)'};border-radius:5px;padding:3px 8px;cursor:pointer;color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">${pinnedOrderNum===o.num?'📌':'📌'}</button><button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button></div>
+          <div style="display:flex;gap:6px"><button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:12px;background:${pinnedOrderNum===o.num?'rgba(0,212,170,.15)':'transparent'};border:1px solid ${pinnedOrderNum===o.num?'var(--accent2)':'var(--border)'};border-radius:5px;padding:3px 8px;cursor:pointer;color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">${pinnedOrderNum===o.num?'📌 Закреплена':'📌'}</button><button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button></div>
         </div>
         ${o.cargo?`<div class="order-cargo-big">${o.cargo}</div>`:''}
         ${o.weight?`<span class="order-weight-tag">${o.weight}</span>`:''}
@@ -1155,7 +1168,15 @@ function findCarriersForOrder(fromCity, toCity, truck, orderNum){
 function togglePinOrder(num){
   if(pinnedOrderNum===num){pinnedOrderNum='';localStorage.removeItem('pinnedOrder');}
   else{pinnedOrderNum=num;localStorage.setItem('pinnedOrder',num);}
-  renderOrders();
+  renderOrders();updatePinnedBanner();
+}
+function updatePinnedBanner(){
+  const b=document.getElementById('pinnedBanner');
+  if(!pinnedOrderNum){b.style.display='none';return;}
+  const o=orders.find(x=>String(x.num)===pinnedOrderNum);
+  if(!o){b.style.display='none';return;}
+  b.style.display='block';
+  b.innerHTML='📌 Закреплена: <b>#'+o.num+'</b> '+( o.cargo||'')+(o.fromCity?' · '+o.fromCity:'')+(o.toCity?' → '+o.toCity:'')+' <button onclick="togglePinOrder(\''+o.num+'\');this.parentElement.style.display=\'none\'" style="font-size:11px;background:transparent;border:none;color:var(--accent2);cursor:pointer;margin-left:6px">✕ Открепить</button>';
 }
 function clearOrderSearch(){
   window._orderSearch=null;
