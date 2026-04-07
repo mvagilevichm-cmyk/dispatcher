@@ -71,7 +71,7 @@
   .price-val{font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)}
   .order-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
   .order-tag{font-size:11px;color:var(--text2);background:var(--surface2);padding:3px 8px;border-radius:4px}
-  .order-footer{display:flex;align-items:center;justify-content:space-between}
+  .order-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
   .order-body{display:none;border-top:1px solid var(--border);padding:10px 12px}.order-body.open{display:block}
   .fab{position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:var(--accent);border-radius:50%;border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,124,255,.4);z-index:100}
   .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}.modal-bg.open{display:flex}
@@ -136,7 +136,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v38</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v39</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -973,7 +973,7 @@ function renderOrders(){
             <div class="order-num-big">#${o.num}</div>
             <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
           </div>
-          <div style="display:flex;gap:6px"><button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:14px;background:transparent;border:1px solid ${pinnedOrderNum===o.num?'var(--accent2)':'var(--border)'};border-radius:5px;padding:3px 8px;cursor:pointer;color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">${pinnedOrderNum===o.num?'📌':'📌'}</button><button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button></div>
+          <div style="display:flex;gap:6px;flex-shrink:0"><button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:14px;background:transparent;border:1px solid ${pinnedOrderNum===o.num?'var(--accent2)':'var(--border)'};border-radius:5px;padding:3px 8px;cursor:pointer;color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">${pinnedOrderNum===o.num?'📌':'📌'}</button><button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:4px 10px">✎ Изменить</button></div>
         </div>
         ${o.cargo?`<div class="order-cargo-big">${o.cargo}</div>`:''}
         ${o.weight?`<span class="order-weight-tag">${o.weight}</span>`:''}
@@ -994,10 +994,10 @@ function renderOrders(){
         </div>
         <div class="order-footer">
           <span class="badge ${sc}">${o.status}</span>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
-            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
-            <button class="edit-btn" style="color:var(--accent2);border-color:var(--accent2)" onclick="event.stopPropagation();sendOrderToTG(${idx})">📨 В ТГ</button>
+            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent);font-size:11px;padding:4px 8px" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
+            <button class="edit-btn" style="color:var(--accent2);border-color:var(--accent2);font-size:11px;padding:4px 8px" onclick="event.stopPropagation();sendOrderToTG(${idx})">📨 В ТГ</button>
           </div>
         </div>
       </div>
