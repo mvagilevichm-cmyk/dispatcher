@@ -98,6 +98,10 @@
   .filter-chip.active{background:rgba(79,124,255,.15);border-color:var(--accent);color:var(--accent)}
   .count-line{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px}
   .error-msg{font-size:12px;color:var(--red);margin-top:4px;display:none}
+  .tg-sending{opacity:0.5;pointer-events:none}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--text);z-index:300;display:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+  .toast.show{display:block;animation:fadeInUp .3s ease}
+  @keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
   
   .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-wrap:wrap}
   .call-filter-tabs.open{display:flex}
@@ -221,6 +225,7 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
 <button class="fab" id="fabBtn">+</button>
 
 <!-- МОДАЛ: ПЕРЕВОЗЧИК -->
@@ -350,6 +355,7 @@
       </div>
     </div>
     
+    <div class="form-row"><label>Цена (грн)</label><input type="text" id="cl-price" placeholder="20000"></div>
     <div class="form-row"><label>Результат</label>
       <select id="cl-result"><option>Взял</option><option>Отказал</option><option>Перезвонить</option><option>Думает</option></select>
     </div>
@@ -363,7 +369,7 @@
 </div>
 
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbxmAh9C27sogvnp4WWNgWQ_n4h8OZWtNVhwl2n90SmQROsaSIuPjp8rJfVEJ5ZYG4Ac/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbySUMi2tti4ECbCNyOwwSxAW5glay_8Hdzn2qMdijyqIscZe_I-te1C8muySX2eHnAI/exec';
 let carriers=[];
 let orders=[];
 let calls=[];
@@ -430,14 +436,7 @@ function fullPhone(raw){
   }
   return '+38'+v;
 }
-function phoneForCall(raw){
-  let d=String(raw||'').replace(/\D/g,'');
-  if(!d)return '';
-  if(d.startsWith('380')&&d.length>=12)return '+'+d.slice(0,12);
-  if(d.startsWith('0')&&d.length>=10)return '+38'+d.slice(0,10);
-  if(d.length===9)return '+380'+d;
-  return '+'+d;
-}
+function phoneForCall(raw){return String(raw||'').replace(/\s/g,'').replace(/[()\-]/g,'');}
 function phoneKey(raw){return String(raw||'').replace(/\D/g,'');}
 function normalizePhone(raw){
   let v=String(raw||'').replace(/\D/g,'');
@@ -506,7 +505,55 @@ async function loadAll(){
     document.getElementById('carrierList').innerHTML='<div class="empty">Не удалось загрузить данные.<br>'+e.message+'</div>';
   }
 }
-async function loadCarriers(){await loadAll();}
+async function loadCarriers(){await 
+// TELEGRAM SEND
+function showToast(msg, duration=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+async function sendOrderToTG(idx){
+  const o=orders[idx];
+  if(!o){showToast('❌ Заявка не найдена');return;}
+  if(!confirm('Отправить заявку #'+o.num+' в Telegram канал?'))return;
+
+  try{
+    const resp=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        action:'send_telegram',
+        orderNum:o.num,
+        cargo:o.cargo||'',
+        weight:o.weight||'',
+        fromCity:o.fromCity||'',
+        fromVillage:o.fromVillage||'',
+        toCity:o.toCity||'',
+        toVillage:o.toVillage||'',
+        dist:o.dist||'',
+        start:o.start||'',
+        end:o.end||'',
+        cars:o.cars||'',
+        truck:o.truck||'',
+        priceNds:o.priceNds||'',
+        priceFop:o.priceFop||'',
+        note:o.note||''
+      })
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      showToast('✅ Заявка #'+o.num+' отправлена в Telegram!');
+    } else {
+      showToast('❌ Ошибка: '+(result.error||'неизвестная'));
+    }
+  }catch(e){
+    showToast('❌ Ошибка отправки: '+e.message);
+  }
+}
+
+loadAll();}
 
 function sClass(s){
   if(!s||s==='Невідомий'||s==='Неизвестный')return 'gray';
@@ -846,7 +893,7 @@ function openAddCallForCarrier(phone,name,orderId){
   document.getElementById('cl-call-btn').href='tel:'+phoneForCall(ph);
   document.getElementById('cl-name').value=name;
   document.getElementById('cl-order').value=orderId||pinnedOrderNum||'';
-  // cl-price removed
+  document.getElementById('cl-price').value='';
   document.getElementById('cl-comment').value='';
   document.getElementById('cl-result').value='Взял';
   openModal('modalCall');
@@ -858,7 +905,7 @@ function openAddCall(){
   editCallIdx=-1;
   document.getElementById('callModalTitle').textContent='Добавить звонок';
   document.getElementById('cl-del-btn').style.display='none';
-  ['cl-phone','cl-name','cl-order','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  ['cl-phone','cl-name','cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
   document.getElementById('cl-call-btn').href='';
   document.getElementById('cl-order').value=pinnedOrderNum||'';
@@ -871,7 +918,7 @@ function openAddCallWithOrder(orderId){
   editCallIdx=-1;
   document.getElementById('callModalTitle').textContent='Добавить звонок';
   document.getElementById('cl-del-btn').style.display='none';
-  ['cl-phone','cl-name','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  ['cl-phone','cl-name','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cl-result').value='Взял';
   document.getElementById('cl-call-btn').href='';
   document.getElementById('cl-order').value=orderId||'';
@@ -887,14 +934,14 @@ function openEditCall(idx){
   document.getElementById('cl-name').value=c.carrierName||'';
   document.getElementById('cl-order').value=c.orderId||'';
   setTimeout(updateOrderPreview,50);
-  // cl-price removed
+  document.getElementById('cl-price').value=c.price||'';
   document.getElementById('cl-result').value=c.result||'Взял';
   document.getElementById('cl-comment').value=c.comment||'';
   openModal('modalCall');
 }
 function saveCall(){
   const ph=fullPhone(document.getElementById('cl-phone').value);
-  const obj={phone:ph,carrierName:document.getElementById('cl-name').value.trim(),orderId:document.getElementById('cl-order').value.trim(),price:'',result:document.getElementById('cl-result').value,comment:document.getElementById('cl-comment').value.trim(),date:editCallIdx>=0?calls[editCallIdx].date:todayStr()};
+  const obj={phone:ph,carrierName:document.getElementById('cl-name').value.trim(),orderId:document.getElementById('cl-order').value.trim(),price:document.getElementById('cl-price').value.trim(),result:document.getElementById('cl-result').value,comment:document.getElementById('cl-comment').value.trim(),date:editCallIdx>=0?calls[editCallIdx].date:todayStr()};
   if(editCallIdx>=0){
     calls[editCallIdx]=obj;
     saveAllCalls();
@@ -950,6 +997,7 @@ function renderOrders(){
           <div style="display:flex;gap:6px;align-items:center">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
             <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
+            <button class="edit-btn" style="color:var(--accent2);border-color:var(--accent2)" onclick="event.stopPropagation();sendOrderToTG(${idx})">📨 В ТГ</button>
           </div>
         </div>
       </div>
@@ -1257,6 +1305,54 @@ document.querySelector('.content').addEventListener('touchend',e=>{
   const next=dx<0?Math.min(cur+1,tabs.length-1):Math.max(cur-1,0);
   if(next!==cur)switchTab(tabs[next]);
 },{passive:true});
+
+
+// TELEGRAM SEND
+function showToast(msg, duration=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+async function sendOrderToTG(idx){
+  const o=orders[idx];
+  if(!o){showToast('❌ Заявка не найдена');return;}
+  if(!confirm('Отправить заявку #'+o.num+' в Telegram канал?'))return;
+
+  try{
+    const resp=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        action:'send_telegram',
+        orderNum:o.num,
+        cargo:o.cargo||'',
+        weight:o.weight||'',
+        fromCity:o.fromCity||'',
+        fromVillage:o.fromVillage||'',
+        toCity:o.toCity||'',
+        toVillage:o.toVillage||'',
+        dist:o.dist||'',
+        start:o.start||'',
+        end:o.end||'',
+        cars:o.cars||'',
+        truck:o.truck||'',
+        priceNds:o.priceNds||'',
+        priceFop:o.priceFop||'',
+        note:o.note||''
+      })
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      showToast('✅ Заявка #'+o.num+' отправлена в Telegram!');
+    } else {
+      showToast('❌ Ошибка: '+(result.error||'неизвестная'));
+    }
+  }catch(e){
+    showToast('❌ Ошибка отправки: '+e.message);
+  }
+}
 
 loadAll();
 </script>
