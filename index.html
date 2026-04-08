@@ -103,9 +103,9 @@
   .toast.show{display:block;animation:fadeInUp .3s ease}
   @keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
   
-  .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+  .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
   .call-filter-tabs.open{display:flex}
-  .cft-btn{flex:1;min-width:0;padding:8px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);white-space:nowrap}
+  .cft-btn{flex:0 0 auto;min-width:60px;padding:8px 6px;text-align:center;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);white-space:nowrap}
   .cft-btn:last-child{border-right:none}
   .cft-btn.active{background:var(--accent);color:#fff}
   .cft-btn .cft-count{display:block;font-size:14px;font-weight:600;font-family:var(--mono);margin-bottom:1px}
@@ -136,7 +136,7 @@
 <div class="app">
   <div class="header">
     <div class="dot"></div>
-    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v39</div></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v40</div></div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
@@ -526,20 +526,20 @@ async function sendOrderToTG(idx){
       body:JSON.stringify({
         action:'send_telegram',
         orderNum:o.num,
-        cargo:o.cargo||'',
-        weight:o.weight||'',
-        fromCity:o.fromCity||'',
-        fromVillage:o.fromVillage||'',
-        toCity:o.toCity||'',
-        toVillage:o.toVillage||'',
+        cargo:toUA(o.cargo||''),
+        weight:toUA(o.weight||''),
+        fromCity:toUA(o.fromCity||''),
+        fromVillage:toUA(o.fromVillage||''),
+        toCity:toUA(o.toCity||''),
+        toVillage:toUA(o.toVillage||''),
         dist:o.dist||'',
         start:o.start||'',
         end:o.end||'',
         cars:o.cars||'',
-        truck:o.truck||'',
+        truck:toUA(o.truck||''),
         priceNds:o.priceNds||'',
         priceFop:o.priceFop||'',
-        note:o.note||''
+        note:toUA(o.note||'')
       })
     });
     const result=await resp.json();
@@ -1121,6 +1121,68 @@ function fillFromOrder(){
   if(!o){prev.textContent=num?'Заявка не найдена':'';return;}
   prev.innerHTML=`<span style="color:var(--accent2)">✓</span> ${o.cargo||''} ${o.weight?'· '+o.weight:''}<br>${o.fromCity||''}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||''}${o.toVillage?' / '+o.toVillage:''}<br>${o.start||''}${o.end?' — '+o.end:''} ${o.dist?'· '+o.dist+' км':''}`;
 }
+
+// RU->UA translation dictionary
+const ruUaDict={
+  // Cities
+  'Киев':'Київ','Харьков':'Харків','Одесса':'Одеса','Днепр':'Дніпро',
+  'Запорожье':'Запоріжжя','Львов':'Львів','Николаев':'Миколаїв','Винница':'Вінниця',
+  'Херсон':'Херсон','Полтава':'Полтава','Чернигов':'Чернігів','Черкассы':'Черкаси',
+  'Житомир':'Житомир','Сумы':'Суми','Хмельницкий':'Хмельницький','Ровно':'Рівне',
+  'Ивано-Франковск':'Івано-Франківськ','Тернополь':'Тернопіль','Луцк':'Луцьк','Ужгород':'Ужгород',
+  'Черновцы':'Чернівці','Кропивницкий':'Кропивницький','Белая Церковь':'Біла Церква',
+  'Кременчуг':'Кременчук','Мелитополь':'Мелітополь','Никополь':'Нікополь',
+  'Бердянск':'Бердянськ','Краматорск':'Краматорськ','Славянск':'Словʼянськ',
+  'Лисичанск':'Лисичанськ','Северодонецк':'Сєвєродонецьк','Конотоп':'Конотоп',
+  'Шостка':'Шостка','Коломыя':'Коломия','Дрогобыч':'Дрогобич','Стрый':'Стрий',
+  'Ковель':'Ковель','Умань':'Умань','Бердичев':'Бердичів','Фастов':'Фастів',
+  'Бровары':'Бровари','Борисполь':'Бориспіль','Буча':'Буча','Ирпень':'Ірпінь',
+  'Каховка':'Каховка','Скадовск':'Скадовськ','Вознесенск':'Вознесенськ',
+  'Первомайск':'Первомайськ','Измаил':'Ізмаїл','Белгород-Днестровский':'Білгород-Дністровський',
+  'Балта':'Балта','Котовск':'Подільськ','Христиновка':'Христинівка',
+  'Черноморск':'Чорноморськ','Южное':'Южне','Прилуки':'Прилуки',
+  'Нежин':'Ніжин','Канев':'Канів','Золотоноша':'Золотоноша','Смела':'Сміла',
+  'Коростень':'Коростень','Новоград-Волынский':'Новоград-Волинський',
+  'Бар':'Бар','Жмеринка':'Жмеринка','Могилев-Подольский':'Могилів-Подільський',
+  'Казатин':'Козятин','Кривой Рог':'Кривий Ріг',
+  // Oblasts
+  'Киевская':'Київська','Харьковская':'Харківська','Одесская':'Одеська',
+  'Днепропетровская':'Дніпропетровська','Запорожская':'Запорізька',
+  'Львовская':'Львівська','Николаевская':'Миколаївська','Винницкая':'Вінницька',
+  'Херсонская':'Херсонська','Полтавская':'Полтавська','Черниговская':'Чернігівська',
+  'Черкасская':'Черкаська','Житомирская':'Житомирська','Сумская':'Сумська',
+  'Хмельницкая':'Хмельницька','Ровненская':'Рівненська',
+  'Тернопольская':'Тернопільська','Волынская':'Волинська',
+  'Закарпатская':'Закарпатська','Черновицкая':'Чернівецька',
+  'Кировоградская':'Кіровоградська',
+  // Cargo types
+  'Зерно':'Зерно','Пшеница':'Пшениця','Кукуруза':'Кукурудза','Ячмень':'Ячмінь',
+  'Подсолнечник':'Соняшник','Рапс':'Ріпак','Соя':'Соя','Макуха':'Макуха',
+  'Шрот':'Шрот','Мука':'Борошно','Сахар':'Цукор','Песок':'Пісок',
+  'Щебень':'Щебінь','Гравий':'Гравій','Глина':'Глина','Уголь':'Вугілля',
+  'Удобрения':'Добрива','Селитра':'Селітра','Цемент':'Цемент',
+  'Металл':'Метал','Лес':'Ліс','Щепа':'Тріска','Опилки':'Тирса',
+  // Truck types
+  'Зерновоз':'Зерновоз','Самосвал':'Самоскид','Тент':'Тент',
+  'Рефрижератор':'Рефрижератор','Цистерна':'Цистерна','Бортовой':'Бортовий',
+  'Щеповоз':'Тріскавоз',
+  // Oblast suffix
+  'обл.':'обл.','область':'область','район':'район','село':'село','с.':'с.',
+  'город':'місто','г.':'м.',
+};
+function toUA(text){
+  if(!text)return '';
+  let result=text;
+  // Sort keys by length descending to match longer phrases first
+  const keys=Object.keys(ruUaDict).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    // Case-insensitive replace preserving boundaries
+    const re=new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    result=result.replace(re,ruUaDict[k]);
+  }
+  return result;
+}
+
 function generateText(){
   let cargo,weight,dateFrom,dateTo,from,to,dist,routeNote,priceNds,priceFop,truck;
   if(genMode==='order'){
@@ -1147,16 +1209,16 @@ function generateText(){
   t+='🔔 ПОТРІБНІ МАШИНИ 🔔\n';
   if(dateStr){t+=`\n🗓 ${dateStr} 🗓\n`;}
   t+='\n📌 ВАНТАЖ:\n';
-  if(cargo){t+=`📦 ${cargo}\n`;}
-  if(weight){t+=`⚖️ Обʼєм: ${weight}\n`;}
-  if(from){t+=`\n📌 ДЕ?\n🚛 ${from}\n`;}
-  if(to){t+=`\n📌 КУДИ?\n🚛 ${to}${routeNote?' ('+routeNote+')':''}\n`;}
+  if(cargo){t+=`📦 ${toUA(cargo)}\n`;}
+  if(weight){t+=`⚖️ Обʼєм: ${toUA(weight)}\n`;}
+  if(from){t+=`\n📌 ДЕ?\n🚛 ${toUA(from)}\n`;}
+  if(to){t+=`\n📌 КУДИ?\n🚛 ${toUA(to)}${routeNote?' ('+toUA(routeNote)+')':''}\n`;}
   if(dist){t+=`\n📏 Відстань: ${dist} км\n`;}
   t+='\n💲 ЦІНА:';
   if(priceNds){t+=` ${priceNds} ПДВ`;}
   if(priceFop){t+=`  /  ${priceFop} ФОП`;}
   t+='\n';
-  if(truck){t+=`\n🚛 АВТО: ${truck}\n`;}
+  if(truck){t+=`\n🚛 АВТО: ${toUA(truck)}\n`;}
   t+='\n📞 Телефон:\n+380633885088\n';
   t+='\n📲 Viber:\n+37379885088\n';
   t+='\n👤 Контакт: Максим\n';
@@ -1192,17 +1254,37 @@ function findCarriersForOrder(fromCity, toCity, truck, orderNum){
     const card=document.getElementById('activeOrderCard');
     if(o&&card){
       card.style.display='block';
+      const oCalls=calls.filter(cl=>cl.orderId===o.num);
+      const tookCount=oCalls.filter(cl=>cl.result==='Взял').length;
+      const refusedCount=oCalls.filter(cl=>cl.result==='Отказал').length;
+      const cbCount=oCalls.filter(cl=>cl.result==='Перезвонить').length;
+      const thinkCount=oCalls.filter(cl=>cl.result==='Думает').length;
       card.innerHTML=`
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">Заявка #${o.num}</span>
-          <button onclick="clearOrderSearch()" style="font-size:11px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+          <span style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent)">Заявка #${o.num}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge ${o.status==='Актуально'?'b-green':o.status==='Закрыта'?'b-gray':o.status==='На паузе'?'b-yellow':'b-red'}">${o.status}</span>
+            <button onclick="clearOrderSearch()" style="font-size:13px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+          </div>
         </div>
-        ${o.cargo?`<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}${o.weight?' · '+o.weight:''}</div>`:''}
-        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}${o.dist?' · '+o.dist+' км':''}</div>
-        ${(o.start||o.end)?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${o.start||'?'} — ${o.end||'?'}</div>`:''}
-        <div style="display:flex;gap:8px">
-          ${o.priceNds?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">НДС </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceNds} грн</span></div>`:''}
-          ${o.priceFop?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">ФОП </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceFop} грн</span></div>`:''}
+        ${o.cargo?`<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}</div>`:''}
+        ${o.weight?`<span style="display:inline-block;background:rgba(79,124,255,.15);color:var(--accent);font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;margin-bottom:6px">${o.weight}</span>`:''}
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}</div>
+        ${o.dist?`<div style="font-size:11px;color:var(--accent2);font-family:var(--mono);margin-bottom:6px">📏 ${o.dist} км</div>`:''}
+        ${(o.start||o.end)?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px;background:var(--surface);padding:4px 8px;border-radius:5px;display:inline-block">🗓 ${o.start||'?'} — ${o.end||'?'}</div>`:''}
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          ${o.priceNds?`<div style="flex:1;background:var(--surface);border-radius:6px;padding:6px 10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">НДС</div><div style="font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)">${o.priceNds} грн</div></div>`:''}
+          ${o.priceFop?`<div style="flex:1;background:var(--surface);border-radius:6px;padding:6px 10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">ФОП</div><div style="font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)">${o.priceFop} грн</div></div>`:''}
+        </div>
+        ${o.truck?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${o.truck.split(',').map(t=>'<span style="font-size:11px;color:var(--text2);background:var(--surface);padding:3px 8px;border-radius:4px">'+t.trim()+'</span>').join('')}</div>`:''}
+        ${o.cars?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px">🚛 Нужно машин: ${o.cars}</div>`:''}
+        ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;padding:4px 8px;background:var(--surface);border-radius:4px">📝 ${o.note}</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:6px;margin-top:2px">
+          <span>📞 ${oCalls.length} звонков</span>
+          ${tookCount?'<span style="color:var(--green)">✅ '+tookCount+' взял</span>':''}
+          ${refusedCount?'<span style="color:var(--red)">❌ '+refusedCount+' отказ</span>':''}
+          ${cbCount?'<span style="color:var(--yellow)">🔄 '+cbCount+' перезв.</span>':''}
+          ${thinkCount?'<span style="color:var(--accent)">🤔 '+thinkCount+' думает</span>':''}
         </div>`;
     }
   }
@@ -1292,19 +1374,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 document.getElementById('fabBtn').onclick=openAddCarrier;
 
-// Swipe navigation
-let _swipeX0=null;
-document.querySelector('.content').addEventListener('touchstart',e=>{_swipeX0=e.touches[0].clientX;},{passive:true});
-document.querySelector('.content').addEventListener('touchend',e=>{
-  if(_swipeX0===null)return;
-  const dx=e.changedTouches[0].clientX-_swipeX0;_swipeX0=null;
-  if(Math.abs(dx)<60)return;
-  const tabs=['carriers','orders','calls','gen'];
-  const cur=tabs.findIndex(t=>document.getElementById('sec-'+t).classList.contains('active'));
-  if(cur===-1)return;
-  const next=dx<0?Math.min(cur+1,tabs.length-1):Math.max(cur-1,0);
-  if(next!==cur)switchTab(tabs[next]);
-},{passive:true});
+// Swipe navigation disabled
 
 
 // TELEGRAM SEND
@@ -1327,20 +1397,20 @@ async function sendOrderToTG(idx){
       body:JSON.stringify({
         action:'send_telegram',
         orderNum:o.num,
-        cargo:o.cargo||'',
-        weight:o.weight||'',
-        fromCity:o.fromCity||'',
-        fromVillage:o.fromVillage||'',
-        toCity:o.toCity||'',
-        toVillage:o.toVillage||'',
+        cargo:toUA(o.cargo||''),
+        weight:toUA(o.weight||''),
+        fromCity:toUA(o.fromCity||''),
+        fromVillage:toUA(o.fromVillage||''),
+        toCity:toUA(o.toCity||''),
+        toVillage:toUA(o.toVillage||''),
         dist:o.dist||'',
         start:o.start||'',
         end:o.end||'',
         cars:o.cars||'',
-        truck:o.truck||'',
+        truck:toUA(o.truck||''),
         priceNds:o.priceNds||'',
         priceFop:o.priceFop||'',
-        note:o.note||''
+        note:toUA(o.note||'')
       })
     });
     const result=await resp.json();
