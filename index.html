@@ -430,7 +430,15 @@ function fullPhone(raw){
   }
   return '+38'+v;
 }
-function phoneForCall(raw){return String(raw||'').replace(/\s/g,'').replace(/[()\-]/g,'');}
+function phoneForCall(raw){
+  let v=String(raw||'').replace(/\D/g,'');
+  if(!v)return '';
+  if(v.startsWith('380')&&v.length>=12) return '+'+v;
+  if(v.startsWith('0')&&v.length>=10) return '+38'+v;
+  if(v.length===9) return '+380'+v;
+  if(v.startsWith('38')&&v.length>=11) return '+'+v;
+  return '+'+v;
+}
 function phoneKey(raw){return String(raw||'').replace(/\D/g,'');}
 function normalizePhone(raw){
   let v=String(raw||'').replace(/\D/g,'');
