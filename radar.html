@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Радар</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f6fa;--surface:#ffffff;--surface2:#f0f2f8;--border:#e2e6f0;--border2:#c8cede;
+  --accent:#185FA5;--accent-light:#E6F1FB;--accent2:#1D9E75;--accent2-light:#E1F5EE;
+  --text:#1a1d2e;--text2:#5a6080;--text3:#9aa0bb;
+  --green:#1D9E75;--yellow:#BA7517;--yellow-bg:#FAEEDA;--red:#A32D2D;--red-bg:#FCEBEB;
+  --radius:12px;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;padding-bottom:90px}
+.header{background:#185FA5;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.h-icon{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.h-title{font-size:18px;font-weight:600;color:#E6F1FB}
+.h-sub{font-size:12px;color:rgba(255,255,255,.55);font-family:var(--mono);margin-top:1px}
+.content{padding:14px}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;text-align:center}
+.stat-num{font-size:30px;font-weight:600;font-family:var(--mono);color:var(--accent)}
+.stat-lbl{font-size:13px;color:var(--text3);margin-top:4px}
+.rcard{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.rcard.on{border-color:var(--accent);border-width:1.5px;background:#f8fbff}
+.rc-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rc-title{font-size:16px;font-weight:600;color:var(--text);margin:0}
+.rc-sub{font-size:13px;color:var(--text2);margin:4px 0 0}
+.tog{width:52px;height:30px;border-radius:15px;background:var(--border2);position:relative;flex-shrink:0;transition:background .2s}
+.tog.on{background:var(--accent)}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:white;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tog.on::after{transform:translateX(22px)}
+.sbadge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:5px 12px;border-radius:20px;margin-top:10px}
+.sbadge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.b-on{background:var(--accent2-light);color:#085041}
+.b-off{background:var(--surface2);color:var(--text3)}
+.b-timer{background:var(--yellow-bg);color:var(--yellow)}
+.timer-block{background:var(--yellow-bg);border:0.5px solid #FAC775;border-radius:8px;padding:8px 12px;margin-top:10px}
+.timer-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.timer-lbl{font-size:13px;color:var(--yellow)}
+.timer-val{font-size:22px;font-weight:600;color:var(--yellow);font-family:var(--mono)}
+.timer-bar{height:4px;background:rgba(186,117,23,.2);border-radius:2px;overflow:hidden}
+.timer-fill{height:100%;background:var(--yellow);border-radius:2px}
+.reg-section{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:none}
+.reg-section.vis{display:block}
+.sec-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);font-weight:500;margin-bottom:10px}
+.s-wrap{position:relative;margin-bottom:8px}
+.s-inp{width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:12px 14px 12px 42px;outline:none;transition:border-color .15s}
+.s-inp:focus{border-color:var(--accent);background:white}
+.s-inp::placeholder{color:var(--text3)}
+.s-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+.dd{background:var(--surface);border:0.5px solid var(--border2);border-radius:8px;overflow:hidden;margin-bottom:8px;display:none;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.dd.vis{display:block}
+.ddi{padding:13px 14px;font-size:15px;color:var(--text);border-bottom:0.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.ddi:last-child{border-bottom:none}
+.ddi:active{background:var(--accent-light)}
+.ddm{color:var(--accent);font-weight:600}
+.sel-list{margin-bottom:8px}
+.sel-item{display:flex;align-items:center;justify-content:space-between;background:var(--accent-light);border:0.5px solid #B5D4F4;border-radius:10px;padding:12px 14px;margin-bottom:7px}
+.sel-name{font-size:15px;font-weight:500;color:#0C447C}
+.sel-x{width:26px;height:26px;border-radius:50%;background:rgba(163,45,45,.1);border:none;color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.empty-sel{font-size:14px;color:var(--text3);text-align:center;padding:14px 0}
+.nb-lbl{font-size:13px;color:#085041;font-weight:500;margin-bottom:8px}
+.nb-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.nchip{font-size:13px;padding:7px 14px;border-radius:20px;background:var(--accent2-light);border:0.5px solid #9FE1CB;color:#085041;cursor:pointer}
+.nchip:active{background:#9FE1CB}
+.save-wrap{position:fixed;bottom:0;left:0;right:0;padding:12px 14px;background:rgba(245,246,250,.96);border-top:0.5px solid var(--border);backdrop-filter:blur(8px)}
+.save-btn{width:100%;background:var(--accent);border:none;border-radius:12px;color:white;font-family:var(--font);font-size:17px;font-weight:600;padding:16px;cursor:pointer;transition:opacity .15s}
+.save-btn:active{opacity:.85}
+.save-btn:disabled{opacity:.4;cursor:default}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1d2e;border-radius:20px;padding:8px 18px;font-size:12px;color:white;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:100}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-icon">📡</div>
+  <div>
+    <div class="h-title">Радар заявок</div>
+    <div class="h-sub" id="h-sub">завантаження...</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-today">—</div>
+      <div class="stat-lbl">заявок сьогодні</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--green)">+60с</div>
+      <div class="stat-lbl">ваш пріоритет</div>
+    </div>
+  </div>
+
+  <div class="rcard on" id="card1" onclick="selType(1)">
+    <div class="rc-row">
+      <div><p class="rc-title">⚡️ Тип 1 · по базі</p><p class="rc-sub" id="base-lbl">ваше місто · постійно</p></div>
+      <div class="tog on" id="tog1"></div>
+    </div>
+    <span class="sbadge b-on" id="badge1">активний</span>
+  </div>
+
+  <div class="rcard" id="card2" onclick="selType(2)">
+    <div class="rc-row">
+      <div><p class="rc-title">🗺 Тип 2 · по областях</p><p class="rc-sub">вибрані регіони · 48 годин</p></div>
+      <div class="tog off" id="tog2"></div>
+    </div>
+    <span class="sbadge b-off" id="badge2">вимкнений</span>
+    <div class="timer-block" id="tblock" style="display:none">
+      <div class="timer-top">
+        <span class="timer-lbl">Вимкнеться через</span>
+        <span class="timer-val" id="tval">48:00</span>
+      </div>
+      <div class="timer-bar"><div class="timer-fill" id="tfill" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  <div class="reg-section" id="reg-sec">
+    <div class="sec-lbl">Пошук регіону</div>
+    <div class="s-wrap">
+      <span class="s-icon">🔍</span>
+      <input type="text" class="s-inp" id="s-inp" placeholder="Введіть місто або область..." autocomplete="off" oninput="onSearch(this.value)">
+    </div>
+    <div class="dd" id="dd"></div>
+    <div class="sec-lbl" style="margin-top:10px">Вибрано</div>
+    <div class="sel-list" id="sel-list"><div class="empty-sel">Ще нічого не вибрано</div></div>
+    <div id="nb-block" style="display:none">
+      <div class="nb-lbl">Ближні — додати?</div>
+      <div class="nb-chips" id="nb-chips"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="save-wrap">
+  <button class="save-btn" id="save-btn" onclick="doSave()">Зберегти налаштування</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbwHq0BBPHFWsOPw9_t3V74ZCQIji72QdNz4c79NpRrfhYm5f_QCOGolBy7vh1Z3qp7H/exec';
+const REGIONS = ['Вінниця','Дніпро','Донецьк','Житомир','Запоріжжя','Івано-Франківськ','Київ','Кропивницький','Луганськ','Луцьк','Львів','Миколаїв','Одеса','Полтава','Рівне','Суми','Тернопіль','Ужгород','Харків','Херсон','Хмельницький','Черкаси','Чернівці','Чернігів','Сімферополь'];
+const NEARBY = {
+  'Харків':['Полтава','Суми','Дніпро'],'Київ':['Чернігів','Житомир','Черкаси','Полтава'],
+  'Дніпро':['Запоріжжя','Харків','Кропивницький','Полтава'],'Одеса':['Миколаїв','Херсон','Вінниця'],
+  'Львів':['Івано-Франківськ','Тернопіль','Луцьк','Ужгород'],'Запоріжжя':['Дніпро','Херсон','Донецьк'],
+  'Полтава':['Харків','Дніпро','Київ','Суми'],'Миколаїв':['Одеса','Херсон','Кропивницький'],
+  'Вінниця':['Хмельницький','Черкаси','Київ','Житомир'],'Суми':['Харків','Полтава','Чернігів'],
+  'Херсон':['Миколаїв','Запоріжжя','Одеса'],'Чернігів':['Київ','Суми','Житомир'],
+  'Житомир':['Київ','Вінниця','Чернігів','Рівне'],'Рівне':['Луцьк','Житомир','Тернопіль'],
+  'Луцьк':['Рівне','Львів','Тернопіль'],'Тернопіль':['Львів','Хмельницький','Рівне','Івано-Франківськ'],
+  'Хмельницький':['Вінниця','Тернопіль','Житомир'],'Черкаси':['Київ','Полтава','Кропивницький','Вінниця'],
+  'Кропивницький':['Дніпро','Черкаси','Миколаїв'],'Чернівці':['Івано-Франківськ','Тернопіль'],
+  'Івано-Франківськ':['Львів','Тернопіль','Ужгород','Чернівці'],'Ужгород':['Львів','Івано-Франківськ'],
+};
+
+let curType=1, selRegs=[], base='', tgId='', exp=null;
+
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();tgId=String(tg.initDataUnsafe?.user?.id||'');}
+if(!tgId){const p=new URLSearchParams(location.search);tgId=p.get('tg_id')||'';}
+document.getElementById('h-sub').textContent=tgId?'ID: '+tgId:'ID не визначено';
+if(tgId)load(); else document.getElementById('save-btn').disabled=true;
+
+async function load(){
+  try{
+    const url=API+'?action=get_radar&telegram_id='+encodeURIComponent(tgId);
+    const r=await fetch(url).catch(()=>null);
+    if(!r){return;}
+    const d=await r.json().catch(()=>null);
+    if(!d){return;}
+    if(d.status==='ok'){
+      base=d.regions?d.regions.split(',')[0].trim():'';
+      document.getElementById('base-lbl').textContent=(base||'ваше місто')+' · постійно';
+      if(d.radar_type==='2'&&(d.radar_status==='активен'||d.radar_status==='активний')){
+        curType=2;
+        selRegs=d.regions?d.regions.split(',').map(r=>r.trim()).filter(Boolean):[];
+        exp=d.expires_at?parseDate(d.expires_at):null;
+        showType2();
+      } else {showType1();}
+      renderSel();updateNearby();
+    }
+  }catch(e){console.log(e);}
+}
+
+function parseDate(s){
+  if(!s)return null;
+  const p=s.split(' '),dmy=p[0].split('.'),hm=p[1]?p[1].split(':'):['0','0'];
+  return new Date(+dmy[2],+dmy[1]-1,+dmy[0],+hm[0],+hm[1]);
+}
+
+function showType1(){
+  document.getElementById('card1').classList.add('on');
+  document.getElementById('card2').classList.remove('on');
+  document.getElementById('tog1').className='tog on';
+  document.getElementById('tog2').className='tog off';
+  document.getElementById('badge1').className='sbadge b-on';
+  document.getElementById('badge1').textContent='активний';
+  document.getElementById('badge2').className='sbadge b-off';
+  document.getElementById('badge2').textContent='вимкнений';
+  document.getElementById('tblock').style.display='none';
+  document.getElementById('reg-sec').classList.remove('vis');
+}
+
+function showType2(){
+  document.getElementById('card1').classList.remove('on');
+  document.getElementById('card2').classList.add('on');
+  document.getElementById('tog1').className='tog off';
+  document.getElementById('tog2').className='tog on';
+  document.getElementById('badge1').className='sbadge b-off';
+  document.getElementById('badge1').textContent='вимкнений';
+  document.getElementById('badge2').className='sbadge b-timer';
+  document.getElementById('badge2').textContent='активний · 48г';
+  document.getElementById('tblock').style.display='block';
+  document.getElementById('reg-sec').classList.add('vis');
+  if(exp)startTimer(exp);
+}
+
+function selType(t){
+  curType=t;
+  if(t===1){showType1();}
+  else{exp=new Date(Date.now()+48*3600000);showType2();}
+}
+
+function startTimer(e){
+  updTimer(e);clearInterval(window._ti);
+  window._ti=setInterval(()=>updTimer(e),30000);
+}
+function updTimer(e){
+  const d=e-Date.now();
+  if(d<=0){document.getElementById('tval').textContent='вимкнено';document.getElementById('tfill').style.width='0%';return;}
+  const h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000);
+  document.getElementById('tval').textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  document.getElementById('tfill').style.width=Math.min(100,Math.round(d/(48*3600000)*100))+'%';
+}
+
+function normSearch(s){
+  return s.toLowerCase()
+    .replace(/х/g,'х').replace(/i/g,'і')
+    .replace(/е/g,'е').replace(/а/g,'а')
+    .replace(/[''`]/g,'')
+    .trim();
+}
+function onSearch(v){
+  const dd=document.getElementById('dd');
+  if(!v.trim()){dd.classList.remove('vis');return;}
+  const q=normSearch(v);
+  const m=REGIONS.filter(r=>normSearch(r).includes(q)&&!selRegs.includes(r));
+  // Сортируем — сначала совпадения с начала слова
+  m.sort((a,b)=>{
+    const ai=normSearch(a).indexOf(q);
+    const bi=normSearch(b).indexOf(q);
+    return ai-bi;
+  });
+  if(!m.length){dd.classList.remove('vis');return;}
+  dd.innerHTML=m.slice(0,8).map(r=>{
+    const rn=normSearch(r);
+    const i=rn.indexOf(q);
+    return `<div class="ddi" onclick="addReg('${r}')">`+
+      `<span>${r.slice(0,i)}<span class="ddm">${r.slice(i,i+v.length)}</span>${r.slice(i+v.length)}</span>`+
+      `</div>`;
+  }).join('');
+  dd.classList.add('vis');
+}
+
+function addReg(n){
+  if(!selRegs.includes(n))selRegs.push(n);
+  document.getElementById('s-inp').value='';
+  document.getElementById('dd').classList.remove('vis');
+  renderSel();updateNearby();
+}
+function remReg(n){selRegs=selRegs.filter(r=>r!==n);renderSel();updateNearby();}
+
+function renderSel(){
+  const el=document.getElementById('sel-list');
+  if(!selRegs.length){el.innerHTML='<div class="empty-sel">Ще нічого не вибрано</div>';return;}
+  el.innerHTML=selRegs.map(r=>`<div class="sel-item"><span class="sel-name">${r}</span><button class="sel-x" onclick="remReg('${r}')">✕</button></div>`).join('');
+}
+
+function updateNearby(){
+  const bl=document.getElementById('nb-block'),ch=document.getElementById('nb-chips');
+  const src=selRegs.length?selRegs:(base?[base]:[]);
+  const sg=new Set();
+  src.forEach(r=>(NEARBY[r]||[]).forEach(n=>{if(!selRegs.includes(n))sg.add(n);}));
+  if(!sg.size){bl.style.display='none';return;}
+  ch.innerHTML=[...sg].slice(0,6).map(r=>`<div class="nchip" onclick="addReg('${r}')">+ ${r}</div>`).join('');
+  bl.style.display='block';
+}
+
+async function doSave(){
+  if(!tgId){toast('❌ ID не визначено');return;}
+  if(curType===2&&!selRegs.length){toast('⚠️ Виберіть хоча б один регіон');return;}
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true;btn.textContent='Зберігаємо...';
+  const regions=curType===1?base:selRegs.join(',');
+  try{
+    // GET запит — обходить CSP та CORS
+    const url=API
+      +'?action=save_radar'
+      +'&telegram_id='+encodeURIComponent(tgId)
+      +'&radar_type='+encodeURIComponent(String(curType))
+      +'&regions='+encodeURIComponent(regions)
+      +'&name='+encodeURIComponent(tgId);
+    const r=await fetch(url).catch(()=>null);
+    toast('✅ Радар збережено!');
+    setTimeout(()=>{if(tg)tg.close();},1500);
+  }catch(e){toast('❌ Помилка: '+e.message);}
+  btn.disabled=false;btn.textContent='Зберегти налаштування';
+}
+
+function toast(m){
+  const el=document.getElementById('toast');
+  el.textContent=m;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
