@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Диспетчер</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  :root{--bg:#0f1117;--surface:#1a1d26;--surface2:#222535;--border:#2e3347;--accent:#4f7cff;--accent2:#00d4aa;--text:#e8eaf2;--text2:#8b90a7;--text3:#555a72;--green:#00d4aa;--yellow:#ffb84d;--red:#ff5c5c;--gray:#555a72;--radius:10px;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+  .app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto}
+  .header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface)}
+  .header-title{font-size:16px;font-weight:600}.header-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0}
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border)}
+  .tab{flex:1;padding:11px 4px;text-align:center;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .search-bar{padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:8px}
+  .search-bar input,.search-bar select{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px;outline:none}
+  .search-bar input{flex:1}.search-bar input::placeholder{color:var(--text3)}
+  .search-bar select{width:140px}.search-bar select option{background:var(--surface2)}
+  .content{flex:1;overflow-y:auto;padding:12px}
+  .section{display:none}.section.active{display:block}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;cursor:pointer;transition:border-color .15s}
+  .stat:hover{border-color:var(--accent)}
+  .stat-num{font-size:20px;font-weight:600;font-family:var(--mono);color:var(--accent)}.stat-label{font-size:10px;color:var(--text3);margin-top:2px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+  .card-head{padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer}
+  .avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+  .av-green{background:rgba(0,212,170,.15);color:var(--green)}.av-yellow{background:rgba(255,184,77,.15);color:var(--yellow)}.av-red{background:rgba(255,92,92,.15);color:var(--red)}.av-gray{background:rgba(85,90,114,.2);color:var(--gray)}
+  .card-info{flex:1;min-width:0}.card-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card-meta{font-size:11px;color:var(--text2);margin-top:2px}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+  .b-green{background:rgba(0,212,170,.15);color:var(--green)}.b-yellow{background:rgba(255,184,77,.15);color:var(--yellow)}.b-red{background:rgba(255,92,92,.15);color:var(--red)}.b-gray{background:rgba(85,90,114,.2);color:var(--gray)}.b-blue{background:rgba(79,124,255,.15);color:var(--accent)}
+  .chevron{color:var(--text3);font-size:16px;transition:transform .2s}.chevron.open{transform:rotate(90deg)}
+  .card-preview{border-top:0.5px solid var(--border)}
+  .card-body{display:none;border-top:1px solid var(--border)}.card-body.open{display:block}
+  .card-section{padding:10px 12px;border-bottom:1px solid var(--border)}.card-section:last-child{border-bottom:none}
+  .section-label{font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  .phone-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .phone-num{font-family:var(--mono);font-size:13px;color:var(--accent2)}
+  .call-btn{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-block}
+  .history-item{padding:8px 0;border-bottom:1px solid var(--border)}.history-item:last-child{border-bottom:none}
+  .h-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+  .h-app{font-size:11px;font-family:var(--mono);color:var(--text3)}.h-detail{font-size:11px;color:var(--text2)}
+  .edit-btn{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:11px;padding:2px 8px;cursor:pointer}
+  .add-call-btn{width:100%;padding:9px;background:rgba(79,124,255,.08);border:1px dashed rgba(79,124,255,.3);border-radius:8px;color:var(--accent);font-size:12px;cursor:pointer;text-align:center}
+  .form-row{margin-bottom:8px}
+  .form-row label{font-size:10px;color:var(--text3);display:block;margin-bottom:4px;font-family:var(--mono);text-transform:uppercase}
+  .form-row input,.form-row select,.form-row textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px;outline:none}
+  .form-row input::placeholder,.form-row textarea::placeholder{color:var(--text3)}
+  .form-row textarea{resize:vertical;min-height:50px}.form-row select option{background:var(--surface2)}
+  .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .form-btns{display:flex;gap:8px;margin-top:10px}
+  .btn-save{flex:1;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:13px;font-weight:500;padding:9px;cursor:pointer}
+  .btn-cancel{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:13px;padding:9px 16px;cursor:pointer}
+  .btn-del{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.3);border-radius:6px;color:var(--red);font-size:13px;padding:9px 14px;cursor:pointer}
+  .order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+  .order-head{padding:12px;cursor:pointer}
+  .order-num-big{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+  .order-cargo-big{font-size:15px;font-weight:600;color:var(--text);margin:2px 0 4px}
+  .order-weight-tag{display:inline-block;background:rgba(79,124,255,.15);color:var(--accent);font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;margin-bottom:6px}
+  .order-route{font-size:13px;font-weight:500;margin-bottom:1px}
+  .order-village{font-size:11px;color:var(--text2);margin-bottom:4px}
+  .order-dist{font-size:11px;color:var(--accent2);font-family:var(--mono);margin-bottom:6px}
+  .order-dates{font-size:12px;color:var(--text2);margin-bottom:6px;background:var(--surface2);padding:4px 8px;border-radius:5px;display:inline-block}
+  .order-prices{display:flex;gap:8px;margin-bottom:8px}
+  .price-box{flex:1;background:var(--surface2);border-radius:6px;padding:6px 10px;text-align:center}
+  .price-label{font-size:10px;color:var(--text3);margin-bottom:2px}
+  .price-val{font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)}
+  .order-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .order-tag{font-size:11px;color:var(--text2);background:var(--surface2);padding:3px 8px;border-radius:4px}
+  .order-footer{display:flex;align-items:center;justify-content:space-between}
+  .order-body{display:none;border-top:1px solid var(--border);padding:10px 12px}.order-body.open{display:block}
+  .fab{position:fixed;bottom:20px;right:20px;width:50px;height:50px;background:var(--accent);border-radius:50%;border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(79,124,255,.4);z-index:100}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}.modal-bg.open{display:flex}
+  .modal{background:var(--surface);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;overflow-x:visible}
+  .modal-title{font-size:15px;font-weight:600;margin-bottom:16px}.modal-btns{display:flex;gap:8px;margin-top:14px}
+  .group-label{font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin:10px 0 6px;letter-spacing:.06em}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:transparent;transition:all .15s}
+  .chip.active{background:rgba(79,124,255,.15);border-color:var(--accent);color:var(--accent)}
+  .callback-panel{background:rgba(255,184,77,.07);border:1px solid rgba(255,184,77,.3);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:none}
+  .active-order-card{background:rgba(79,124,255,.07);border:1px solid rgba(79,124,255,.3);border-radius:var(--radius);padding:12px;margin-bottom:12px;display:none}
+  .callback-panel.open{display:block}
+  .callback-item{padding:10px 0;border-bottom:1px solid var(--border)}
+  .callback-item:last-child{border-bottom:none}
+  .gen-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+  .gen-tabs{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .gen-tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none}
+  .gen-tab.active{background:var(--accent);color:#fff}
+  .gen-output{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);margin-top:8px;line-height:1.7;white-space:pre-wrap;min-height:100px;font-family:var(--mono)}
+  .copy-btn{width:100%;margin-top:8px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:9px;font-size:13px;cursor:pointer}
+  .empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+  .filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .filter-chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:transparent}
+  .filter-chip.active{background:rgba(79,124,255,.15);border-color:var(--accent);color:var(--accent)}
+  .count-line{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px}
+  .error-msg{font-size:12px;color:var(--red);margin-top:4px;display:none}
+  
+  .call-filter-tabs{display:none;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .call-filter-tabs.open{display:flex}
+  .cft-btn{flex:0 0 auto;min-width:60px;padding:8px 6px;text-align:center;font-size:10px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none;border-right:1px solid var(--border);white-space:nowrap}
+  .cft-btn:last-child{border-right:none}
+  .cft-btn.active{background:var(--accent);color:#fff}
+  .cft-btn .cft-count{display:block;font-size:14px;font-weight:600;font-family:var(--mono);margin-bottom:1px}
+
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+  /* Кастомний dropdown для міст */
+  .city-wrap{position:relative}
+  .city-dropdown{position:fixed;background:var(--surface);border:1px solid var(--accent);border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;z-index:9999;display:none;min-width:200px}
+  .city-option{padding:9px 10px;font-size:13px;color:var(--text);cursor:pointer;border-bottom:0.5px solid var(--border)}
+  .city-option:last-child{border-bottom:none}
+  .city-option:active,.city-option:hover{background:var(--surface2);color:var(--accent)}
+  .city-option mark{background:transparent;color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="dot"></div>
+    <div><div class="header-title">Диспетчер</div><div class="header-sub">PamMak · v65</div></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('carriers')">Перевозчики</div>
+    <div class="tab" onclick="switchTab('orders')">Заявки</div>
+    <div class="tab" onclick="switchTab('calls')">Звонки</div>
+    <div class="tab" onclick="switchTab('gen')">Рассылка</div>
+  </div>
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="Поиск по городу, имени, телефону..." oninput="renderCarriers()" autocomplete="off">
+    <select id="typeFilter" onchange="renderCarriers()">
+      <option value="">Все типы</option>
+      <option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option>
+    </select>
+  </div>
+  <div class="content">
+
+    <!-- ПЕРЕВОЗЧИКИ -->
+    <div class="section active" id="sec-carriers">
+      <div class="stats">
+        <div class="stat" onclick="clearFilters()"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Всего</div></div>
+        <div class="stat"><div class="stat-num" id="stat-reliable" style="color:var(--green)">0</div><div class="stat-label">Надёжных</div></div>
+        <div class="stat" onclick="toggleCallback()"><div class="stat-num" id="stat-callback" style="color:var(--yellow)">0</div><div class="stat-label">Перезвонить</div></div>
+        <div class="stat" onclick="toggleThinking()"><div class="stat-num" id="stat-thinking" style="color:var(--accent)">0</div><div class="stat-label">Думает</div></div>
+      </div>
+      <div class="active-order-card" id="activeOrderCard"></div>
+      <div class="callback-panel" id="callbackPanel"></div>
+      <div class="callback-panel" id="thinkingPanel" style="border-color:rgba(79,124,255,.3);background:rgba(79,124,255,.07)"></div>
+
+      <div class="call-filter-tabs" id="callFilterTabs">
+        <button class="cft-btn active" onclick="setCallFilter('all',this)"><span class="cft-count" id="cft-all">0</span>Все</button>
+        <button class="cft-btn" onclick="setCallFilter('none',this)"><span class="cft-count" id="cft-none">0</span>Не обзвонены</button>
+        <button class="cft-btn" onclick="setCallFilter('callback',this)"><span class="cft-count" id="cft-callback">0</span>Перезвонить</button>
+        <button class="cft-btn" onclick="setCallFilter('thinking',this)"><span class="cft-count" id="cft-thinking">0</span>Думает</button>
+        <button class="cft-btn" onclick="setCallFilter('took',this)"><span class="cft-count" id="cft-took">0</span>Взял</button>
+        <button class="cft-btn" onclick="setCallFilter('refused',this)"><span class="cft-count" id="cft-refused">0</span>Отказал</button>
+      </div>
+      <div id="matchBanner" style="display:none;background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--accent);margin-bottom:10px"></div>
+      <div class="count-line" id="countLine"></div>
+      <div id="carrierList"></div>
+    </div>
+
+    <!-- ЗАЯВКИ -->
+    <div class="section" id="sec-orders"><div id="orderList"></div></div>
+
+    <!-- ЗВОНКИ -->
+    <div class="section" id="sec-calls">
+      <input type="text" id="callSearch" placeholder="Поиск по заявке или перевозчику..." oninput="renderCalls()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font);font-size:13px;padding:8px 12px;outline:none;margin-bottom:12px;display:block">
+      <div id="callList"></div>
+    </div>
+
+    <!-- РАССЫЛКА -->
+    <div class="section" id="sec-gen">
+      <div class="gen-section">
+        <div class="gen-tabs">
+          <button class="gen-tab active" onclick="switchGenTab('manual',this)">Заполнить вручную</button>
+          <button class="gen-tab" onclick="switchGenTab('order',this)">По номеру заявки</button>
+        </div>
+        <div id="gen-manual">
+          <div class="form-row"><label>Що везем</label><input type="text" id="g-cargo" placeholder="Макуха Соняшникова"></div>
+          <div class="form-row"><label>Обʼєм / Вага</label><input type="text" id="g-weight" placeholder="2500 т"></div>
+          <div class="form-row-2">
+            <div class="form-row" style="margin:0"><label>Дата початку</label><input type="text" id="g-date-from" placeholder="30.03.26"></div>
+            <div class="form-row" style="margin:0"><label>Дата кінця</label><input type="text" id="g-date-to" placeholder="17.04.26"></div>
+          </div>
+          <div class="form-row"><label>Звідки (область, місто)</label><input type="text" id="g-from" placeholder="Черкаська обл., м. Христинівка"></div>
+          <div class="form-row"><label>Куди (область, місто)</label><input type="text" id="g-to" placeholder="Одеська обл., м. Чорноморськ"></div>
+          <div class="form-row"><label>Відстань (км)</label><input type="number" id="g-dist" placeholder="310"></div>
+          <div class="form-row"><label>Примітка до маршруту</label><input type="text" id="g-route-note" placeholder="цілодобово на УТР"></div>
+          <div class="form-row-2">
+            <div class="form-row" style="margin:0"><label>Ціна НДС (грн)</label><input type="number" id="g-price-nds" placeholder="1000"></div>
+            <div class="form-row" style="margin:0"><label>Ціна ФОП (грн)</label><input type="number" id="g-price-fop" placeholder="900"></div>
+          </div>
+          <div class="form-row"><label>Тип авто</label><input type="text" id="g-truck" placeholder="Самоскиди"></div>
+        </div>
+        <div id="gen-order" style="display:none">
+          <div class="form-row"><label>Номер заявки</label>
+            <input type="text" id="g-order-num" placeholder="1" oninput="fillFromOrder()" style="font-size:18px;font-weight:600;color:var(--accent);font-family:var(--mono)">
+          </div>
+          <div id="g-order-preview" style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6"></div>
+        </div>
+        <button class="btn-save" onclick="generateText()" style="width:100%;margin-top:12px">Згенерувати оголошення</button>
+        <div class="gen-output" id="genOutput" style="display:none"></div>
+        <button class="copy-btn" onclick="copyText()" id="copyBtn" style="display:none">Скопіювати текст</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn">+</button>
+
+<!-- МОДАЛ: ПЕРЕВОЗЧИК -->
+<div class="modal-bg" id="modalCarrier">
+  <div class="modal">
+    <div class="modal-title">Новый перевозчик</div>
+    <div class="form-row"><label>Имя</label><input type="text" id="c-name" placeholder="Василий К."></div>
+    <div class="form-row"><label>Базировка (область)</label><div class="city-wrap"><input type="text" id="c-city" placeholder="Київська" autocomplete="off" oninput="citySearch(this,'c-city-dd')" onclick="citySearch(this,'c-city-dd')" onblur="setTimeout(()=>closeCityDd('c-city-dd'),200)"><div class="city-dropdown" id="c-city-dd"></div></div></div>
+    <div class="group-label">Транспорт</div>
+    <div id="c-vehicles">
+      <div class="form-row-2 c-vehicle-row">
+        <div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" class="c-cars-inp" placeholder="3"></div>
+        <div class="form-row" style="margin:0"><label>Тип машины</label>
+          <select class="c-type-inp"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select>
+        </div>
+      </div>
+    </div>
+    <button onclick="addVehicleRow()" style="font-size:12px;color:var(--accent);background:transparent;border:none;cursor:pointer;padding:4px 0;margin-bottom:8px">+ Добавить ещё тип авто</button>
+    <div class="form-row">
+      <label>Телефон для CRM</label>
+      <input type="tel" id="c-phone" placeholder="+380671112233">
+      <div class="error-msg" id="c-phone-err">Такой номер уже есть в базе</div>
+    </div>
+    <div class="form-row"><label>Статус</label>
+      <select id="c-status"><option>Неизвестный</option><option>Надёжный</option><option>Нейтральный</option><option>Проблемный</option></select>
+    </div>
+    <div class="form-row"><label>Комментарий</label><textarea id="c-comment" placeholder="Работает только по выходным..."></textarea></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modalCarrier')">Отмена</button>
+      <button class="btn-save" onclick="saveCarrier()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛ: ЗАЯВКА -->
+<div class="modal-bg" id="modalOrder">
+  <div class="modal">
+    <div class="modal-title" id="orderModalTitle">Новая заявка</div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>№ заявки</label>
+        <input type="text" id="o-num" placeholder="1" style="font-size:18px;font-weight:600;color:var(--accent);font-family:var(--mono)">
+      </div>
+      <div class="form-row" style="margin:0"><label>Дата (дд.мм.гггг)</label><input type="text" id="o-date" placeholder="28.03.2026"></div>
+    </div>
+    <div class="group-label">Что перевозим</div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Груз</label><input type="text" id="o-cargo" placeholder="Зерно, пшеница..."></div>
+      <div class="form-row" style="margin:0"><label>Кол-во / Вес</label><input type="text" id="o-weight" placeholder="20т / 1000 шт"></div>
+    </div>
+    <div class="group-label">Откуда</div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Город</label><div class="city-wrap"><input type="text" id="o-from-city" placeholder="Київ" autocomplete="off" oninput="citySearch(this,'o-from-city-dd')" onclick="citySearch(this,'o-from-city-dd')" onblur="setTimeout(()=>closeCityDd('o-from-city-dd'),200)"><div class="city-dropdown" id="o-from-city-dd"></div></div></div>
+      <div class="form-row" style="margin:0"><label>Село</label><input type="text" id="o-from-village" placeholder="с. Браилів"></div>
+    </div>
+    <div class="group-label">Куда</div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Город</label><div class="city-wrap"><input type="text" id="o-to-city" placeholder="Одеса" autocomplete="off" oninput="citySearch(this,'o-to-city-dd')" onclick="citySearch(this,'o-to-city-dd')" onblur="setTimeout(()=>closeCityDd('o-to-city-dd'),200)"><div class="city-dropdown" id="o-to-city-dd"></div></div></div>
+      <div class="form-row" style="margin:0"><label>Село</label><input type="text" id="o-to-village" placeholder="с. Затока"></div>
+    </div>
+    <div class="form-row" style="margin-top:8px"><label>Расстояние (км)</label><input type="number" id="o-dist" placeholder="310"></div>
+    <div class="form-row-2" style="margin-top:8px">
+      <div class="form-row" style="margin:0"><label>Дата начала</label><input type="text" id="o-start" placeholder="28.03.2026"></div>
+      <div class="form-row" style="margin:0"><label>Дата конца</label><input type="text" id="o-end" placeholder="17.04.2026"></div>
+    </div>
+    <div class="form-row" style="margin-top:8px"><label>Кол-во машин</label><input type="number" id="o-cars" placeholder="1"></div>
+    <div class="group-label">Тип машины (можно несколько)</div>
+    <div class="chips" id="truckChips">
+      <button class="chip" onclick="this.classList.toggle('active')">Зерновоз</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Тент</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Рефрижератор</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Самосвал</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Цистерна</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Бортовой</button>
+      <button class="chip" onclick="this.classList.toggle('active')">Щеповоз</button>
+    </div>
+    <div class="group-label">Тариф</div>
+    <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:8px;padding:8px 12px;cursor:pointer" onclick="togglePriceRequest()">
+      <div id="o-price-req-check" style="width:18px;height:18px;border-radius:4px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s"></div>
+      <span style="font-size:13px;color:var(--text2)">Запит ціни <span style="color:var(--text3);font-size:11px">(перевізник називає свою ціну)</span></span>
+    </div>
+    <div id="o-price-fields" class="form-row-2">
+      <div class="form-row" style="margin:0"><label>НДС (грн)</label><input type="number" id="o-price-nds" placeholder="20000"></div>
+      <div class="form-row" style="margin:0"><label>ФОП (грн)</label><input type="number" id="o-price-fop" placeholder="18000"></div>
+    </div>
+    <div class="form-row" style="margin-top:8px"><label>Примечание</label><textarea id="o-note" placeholder="Особые условия..."></textarea></div>
+    <div class="form-row"><label>Статус</label>
+      <select id="o-status">
+        <option>Актуально</option>
+        <option>На паузе</option>
+        <option>Зафраховано</option>
+        <option>Зафраховано через Радар ⚡️</option>
+        <option>Закрыта</option>
+        <option>Отменено</option>
+        <option>Поставлено</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modalOrder')">Отмена</button>
+      <button class="btn-del" id="o-del-btn" onclick="deleteOrder()" style="display:none">Удалить</button>
+      <button class="btn-save" onclick="saveOrder()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛ: ЗВОНОК -->
+<div class="modal-bg" id="modalCall">
+  <div class="modal">
+    <div class="modal-title" id="callModalTitle">Добавить звонок</div>
+    <div class="form-row">
+      <label>№ заявки</label>
+      <input type="text" id="cl-order" placeholder="1" style="font-size:16px;font-weight:600;color:var(--accent);font-family:var(--mono)" oninput="updateOrderPreview()">
+    </div>
+    <div id="cl-order-preview" style="display:none;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent)"></div>
+    <div class="form-row">
+      <label>Телефон перевозчика</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="tel" id="cl-phone" placeholder="+380671112233" style="flex:1" oninput="document.getElementById('cl-call-btn').href='tel:'+phoneForCall(this.value)">
+        <a id="cl-call-btn" href="" style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:7px 14px;font-size:13px;text-decoration:none;white-space:nowrap">📞 Звонить</a>
+      </div>
+    </div>
+    <div class="form-row"><label>Имя перевозчика</label><input type="text" id="cl-name" placeholder="Василий К." oninput="updateCarrierPreview()"></div>
+    <div style="margin-bottom:8px">
+      <button onclick="toggleCarrierPreview()" style="font-size:12px;color:var(--accent);background:transparent;border:1px solid rgba(79,124,255,.3);border-radius:6px;padding:5px 12px;cursor:pointer;width:100%;text-align:left" id="carrierPreviewBtn">▼ Показать карточку перевозчика</button>
+      <div id="carrierPreviewBlock" style="display:none;margin-top:8px;background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px">Данные перевозчика</div>
+        <div class="form-row" style="margin-bottom:6px"><label>Имя</label><input type="text" id="cp-name" placeholder="Василий К."></div>
+        <div class="form-row" style="margin-bottom:6px"><label>Базировка</label><div class="city-wrap"><input type="text" id="cp-city" placeholder="Київська" autocomplete="off" oninput="citySearch(this,'cp-city-dd')" onclick="citySearch(this,'cp-city-dd')" onblur="setTimeout(()=>closeCityDd('cp-city-dd'),200)"><div class="city-dropdown" id="cp-city-dd"></div></div></div>
+        <div class="form-row-2" style="margin-bottom:6px">
+          <div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" id="cp-cars" placeholder="3"></div>
+          <div class="form-row" style="margin:0"><label>Тип машины</label>
+            <select id="cp-type"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:6px"><label>Статус</label>
+          <select id="cp-status"><option>Неизвестный</option><option>Надёжный</option><option>Нейтральный</option><option>Проблемный</option></select>
+        </div>
+        <div class="form-row" style="margin-bottom:6px"><label>Комментарий</label><textarea id="cp-comment" placeholder="Примечание..." style="min-height:40px"></textarea></div>
+        <button onclick="saveCarrierFromCall()" class="btn-save" style="width:100%;padding:8px;font-size:12px">Сохранить изменения перевозчика</button>
+      </div>
+    </div>
+    
+    <div class="form-row"><label>Результат</label>
+      <select id="cl-result"><option>Взял</option><option>Отказал</option><option>Перезвонить</option><option>Думает</option></select>
+    </div>
+    <div class="form-row"><label>Комментарий</label><textarea id="cl-comment" placeholder="Занят до пятницы..."></textarea></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modalCall')">Отмена</button>
+      <button class="btn-del" id="cl-del-btn" onclick="deleteCall()" style="display:none">Удалить</button>
+      <button class="btn-save" onclick="saveCall()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbwHq0BBPHFWsOPw9_t3V74ZCQIji72QdNz4c79NpRrfhYm5f_QCOGolBy7vh1Z3qp7H/exec';
+const BOT_URL='https://activitibot-production.up.railway.app';
+
+const UA_CITIES=['Вінниця','Вінницька','Волинська','Дніпро','Дніпропетровська','Донецька',
+'Житомир','Житомирська','Закарпатська','Запоріжжя','Запорізька','Івано-Франківськ','Івано-Франківська',
+'Київ','Київська','Кіровоградська','Кропивницький','Луганська','Луцьк','Львів','Львівська',
+'Миколаїв','Миколаївська','Одеса','Одеська','Полтава','Полтавська','Рівне','Рівненська',
+'Суми','Сумська','Тернопіль','Тернопільська','Харків','Харківська','Херсон','Херсонська',
+'Хмельницький','Хмельницька','Черкаси','Черкаська','Чернівці','Чернівецька','Чернігів','Чернігівська',
+'Кривий Ріг','Маріуполь','Мелітополь','Кременчук','Біла Церква','Бровари','Чорноморськ',
+'Енергодар','Конотоп','Шостка','Павлоград','Ізмаїл','Мукачево','Умань','Буча','Ірпінь',
+'Бориспіль','Нікополь','Бердянськ','Краматорськ','Дрогобич'];
+
+function citySearch(input, ddId){
+  const dd=document.getElementById(ddId);
+  const q=(input.value||'').trim().toLowerCase();
+  const list=q?UA_CITIES.filter(c=>c.toLowerCase().includes(q)):UA_CITIES;
+  if(!list.length){dd.style.display='none';return;}
+  dd.innerHTML=list.map(c=>{
+    if(!q) return `<div class="city-option" onmousedown="pickCity('${c}','${input.id}','${ddId}')">${c}</div>`;
+    const idx=c.toLowerCase().indexOf(q);
+    const hi=c.slice(0,idx)+'<mark>'+c.slice(idx,idx+q.length)+'</mark>'+c.slice(idx+q.length);
+    return `<div class="city-option" onmousedown="pickCity('${c}','${input.id}','${ddId}')">${hi}</div>`;
+  }).join('');
+  // Позиціонуємо під input
+  const rect=input.getBoundingClientRect();
+  dd.style.top=(rect.bottom+window.scrollY)+'px';
+  dd.style.left=rect.left+'px';
+  dd.style.width=rect.width+'px';
+  dd.style.display='block';
+}
+
+function pickCity(city, inputId, ddId){
+  document.getElementById(inputId).value=city;
+  document.getElementById(ddId).style.display='none';
+}
+
+function closeCityDd(ddId){
+  const dd=document.getElementById(ddId);
+  if(dd) dd.style.display='none';
+}
+let carriers=[];
+let orders=[];
+let calls=[];
+let statusFilter='';
+let callFilter='all';
+let pinnedOrderNum=localStorage.getItem('pinnedOrder')||'';
+let editOrderIdx=-1;
+let editCallIdx=-1;
+let dataLoaded=false;
+
+function rawPhone(raw){
+  // Write only digits to avoid Google Sheets formula error
+  const s=String(raw||'').trim();
+  if(!s)return '';
+  let v=s.replace(/\D/g,'');
+  // ensure starts with 380
+  if(v.startsWith('380'))return v;
+  if(v.startsWith('38'))return v;
+  if(v.startsWith('0'))return '38'+v;
+  if(v.length===9)return '380'+v;
+  return '38'+v;
+}
+function fmtDate(d){
+  if(!d&&d!==0)return '';
+  const s=String(d).trim();
+  if(!s||s==='0')return '';
+  // already in dd.mm.yyyy
+  if(/^\d{2}\.\d{2}\.\d{4}$/.test(s))return s;
+  // yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)){const p=s.slice(0,10).split('-');return `${p[2]}.${p[1]}.${p[0]}`;}
+  // dd.mm.yy -> dd.mm.20yy
+  if(/^\d{2}\.\d{2}\.\d{2}$/.test(s)){const p=s.split('.');return `${p[0]}.${p[1]}.20${p[2]}`;}
+  // try as date object string
+  try{const dt=new Date(s);if(!isNaN(dt.getTime())){return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;}}catch(e){}
+  return s;
+}
+function todayStr(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;}
+
+function formatPhone(id){
+  const el=document.getElementById(id);
+  let v=el.value.replace(/\D/g,'');
+  if(v.startsWith('380'))v=v.slice(3);
+  else if(v.startsWith('38'))v=v.slice(2);
+  if(v.length>10)v=v.slice(0,10);
+  el.value=v;
+}
+function fullPhone(raw){
+  const s=String(raw||'').trim();
+  if(!s)return '';
+  let v=s.replace(/\D/g,'');
+  if(!v)return s;
+  // normalize to 380XXXXXXXXX
+  if(v.startsWith('380')&&v.length===12){}
+  else if(v.startsWith('380')&&v.length>12)v=v.slice(0,12);
+  else if(v.startsWith('38')&&v.length===11)v='380'+v.slice(2);
+  else if(v.startsWith('0')&&v.length===10)v='38'+v;
+  else if(v.length===9)v='380'+v;
+  // format +380(XX)XXX X XXX
+  if(v.length===12){
+    const op=v.slice(3,5); // XX без нуля
+    const p1=v.slice(5,8);
+    const p2=v.slice(8,9);
+    const p3=v.slice(9,12);
+    return `+380(${op})${p1} ${p2} ${p3}`;
+  }
+  return '+38'+v;
+}
+function phoneForCall(raw){
+  let v=String(raw||'').replace(/\D/g,'');
+  if(!v)return '';
+  if(v.startsWith('380')&&v.length>=12) return '+'+v;
+  if(v.startsWith('0')&&v.length>=10) return '+38'+v;
+  if(v.length===9) return '+380'+v;
+  if(v.startsWith('38')&&v.length>=11) return '+'+v;
+  return '+'+v;
+}
+function phoneKey(raw){return String(raw||'').replace(/\D/g,'');}
+function normalizePhone(raw){
+  let v=String(raw||'').replace(/\D/g,'');
+  if(v.startsWith('380'))v=v.slice(3);
+  else if(v.startsWith('38'))v=v.slice(2);
+  if(v.startsWith('0'))v=v.slice(1);
+  return v; // 9 digits
+}
+
+async function loadAll(){
+  try{
+    document.getElementById('carrierList').innerHTML='<div class="empty">Загрузка данных...</div>';
+    const [cRes, oRes, clRes] = await Promise.all([
+      fetch(`${API_URL}?sheet=Перевозчики`),
+      fetch(`${API_URL}?sheet=Заявки`),
+      fetch(`${API_URL}?sheet=Звонки`)
+    ]);
+    const [cData, oData, clData] = await Promise.all([cRes.json(), oRes.json(), clRes.json()]);
+
+    carriers=cData.filter(r=>r['Имя']&&String(r['Имя']).trim()).map(r=>({
+      name:String(r['Имя']||'').trim(),
+      city:String(r['Базировка']||'').trim(),
+      cars:String(r['Кол-во.Авто']||'').trim(),
+      type:String(r['Тип машын']||r['Тип машины']||'').trim(),
+      phone:String(r['Телефон 1']||r['Телефон']||'').trim(),
+      status:String(r['Статус']||'').trim()||'Невідомий',
+      comment:String(r['Комментарий']||r['Коментарій']||'').trim(),
+      local:false
+    }));
+    const local=JSON.parse(localStorage.getItem('localCarriers')||'[]');
+    carriers=[...carriers,...local];
+
+    orders=oData.filter(r=>r['№ заявки']||r['№ заявки']==='0').map(r=>({
+      num:String(r['№ заявки']||'').trim(),
+      date:fmtDate(String(r['Дата']||'').trim()),
+      cargo:String(r['Груз']||'').trim(),
+      weight:String(r['Вес']||'').trim(),
+      fromCity:String(r['Город откуда']||'').trim(),
+      fromVillage:String(r['Село откуда']||'').trim(),
+      toCity:String(r['Город куда']||'').trim(),
+      toVillage:String(r['Село куда']||'').trim(),
+      dist:String(r['Расстояние']||'').trim(),
+      start:fmtDate(String(r['Дата начала']||'').trim()),
+      end:fmtDate(String(r['Дата конца']||'').trim()),
+      cars:String(r['Кол-во машин']||'').trim(),
+      truck:String(r['Тип машины']||'').trim(),
+      priceNds:String(r['Цена НДС']||'').trim(),
+      priceFop:String(r['Цена ФОП']||'').trim(),
+      priceRequest:String(r['Цена НДС']||'').trim()===''&&String(r['Цена ФОП']||'').trim()===''&&String(r['tg_status']||'').trim()!==''?false:(String(r['priceRequest']||'').trim()==='true'),
+      note:String(r['Примечания']||r['Примечание']||'').trim(),
+      status:String(r['Статус']||'').trim(),
+      tgStatus:String(r['tg_status']||'').trim()||'',
+      tgMessageId:String(r['tg_message_id']||'').trim()||'',
+      tgTeaserId:String(r['tg_teaser_id']||'').trim()||''
+    }));
+
+    calls=clData.filter(r=>r['Дата']||r['№ заявки']).map(r=>({
+      date:fmtDate(String(r['Дата']||'').trim()),
+      orderId:String(r['№ заявки']||'').trim(),
+      phone:String(r['Телефон для CRM']||r['Телефон']||'').trim().replace(/^\s+/,''),
+      carrierName:String(r['Перевозчик']||'').trim(),
+      price:String(r['Цена']||'').trim(),
+      result:String(r['Результат']||'').trim(),
+      comment:String(r['Комментарий']||'').trim()
+    }));
+
+    dataLoaded=true;
+    renderCarriers();updateStats();renderOrders();renderCalls();
+  }catch(e){
+    document.getElementById('carrierList').innerHTML='<div class="empty">Не удалось загрузить данные.<br>'+e.message+'</div>';
+  }
+}
+async function loadCarriers(){await loadAll();}
+
+function sClass(s){
+  if(!s||s==='Невідомий'||s==='Неизвестный')return 'gray';
+  if(s==='Надійний'||s==='Надёжный')return 'green';
+  if(s==='Нейтральний'||s==='Нейтральный')return 'yellow';
+  if(s==='Проблемний'||s==='Проблемный')return 'red';
+  return 'gray';
+}
+function sLabel(s){
+  if(!s||s==='Невідомий')return 'Неизв.';
+  if(s==='Надійний')return 'Надёжный';
+  if(s==='Нейтральний')return 'Нейтральный';
+  if(s==='Проблемний')return 'Проблемный';
+  return s;
+}
+function ini(name){const p=name.trim().split(' ');return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():name.substring(0,2).toUpperCase();}
+function updateStats(){
+  document.getElementById('stat-total').textContent=carriers.length;
+  document.getElementById('stat-reliable').textContent=carriers.filter(c=>c.status==='Надійний'||c.status==='Надёжный').length;
+  document.getElementById('stat-callback').textContent=calls.filter(c=>c.result==='Перезвонить').length;
+  document.getElementById('stat-thinking').textContent=calls.filter(c=>c.result==='Думает').length;
+}
+
+// СПИСОК ПЕРЕЗВОНИТЬ
+function toggleCallback(){
+  const p=document.getElementById('callbackPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))renderCallback();
+  else p.innerHTML='';
+}
+function renderCallback(){
+  const cb=calls.map((c,i)=>({...c,idx:i})).filter(c=>c.result==='Перезвонить');
+  const p=document.getElementById('callbackPanel');
+  if(!cb.length){p.innerHTML='<div style="font-size:13px;color:var(--text3)">Нет звонков для перезвона</div>';return;}
+  const order_lookup={};
+  orders.forEach(o=>order_lookup[o.num]=o);
+  p.innerHTML='<div style="font-size:11px;color:var(--yellow);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px;letter-spacing:.06em">Перезвонить ('+cb.length+')</div>'+
+  cb.map(c=>{
+    const o=order_lookup[c.orderId];
+    const ph=fullPhone(c.phone||'');
+    const key=phoneKey(c.phone||'');
+    const orderInfo=o?`${o.cargo||''} ${o.fromCity||''}→${o.toCity||''}`:'';
+    return `<div class="callback-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px">${c.carrierName}</div>
+          <div style="font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:2px">Заявка #${c.orderId}</div>
+          ${orderInfo?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">${orderInfo}</div>`:''}
+          ${c.comment?`<div style="font-size:11px;color:var(--text3)">${c.comment}</div>`:''}
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${['Взял','Отказал','Думает'].map(r=>`<button onclick="changeCallResult(${c.idx},'${r}',this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">${r}</button>`).join('')}
+          </div>
+        </div>
+        <a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()">Звонить</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleThinking(){
+  const p=document.getElementById('thinkingPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))renderThinking();
+  else p.innerHTML='';
+}
+function renderThinking(){
+  const cb=calls.map((c,i)=>({...c,idx:i})).filter(c=>c.result==='Думает');
+  const p=document.getElementById('thinkingPanel');
+  if(!cb.length){p.innerHTML='<div style="font-size:13px;color:var(--text3)">Нет звонков со статусом "Думает"</div>';return;}
+  const order_lookup={};
+  orders.forEach(o=>order_lookup[o.num]=o);
+  p.innerHTML='<div style="font-size:11px;color:var(--accent);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px;letter-spacing:.06em">Думает ('+cb.length+')</div>'+
+  cb.map(c=>{
+    const o=order_lookup[c.orderId];
+    const orderInfo=o?`${o.cargo||''} ${o.fromCity||''}→${o.toCity||''}`:'';
+    return `<div class="callback-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px">${c.carrierName}</div>
+          <div style="font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:2px">Заявка #${c.orderId}</div>
+          ${orderInfo?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">${orderInfo}</div>`:''}
+          ${c.comment?`<div style="font-size:11px;color:var(--text3)">${c.comment}</div>`:''}
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${['Взял','Отказал','Перезвонить'].map(r=>`<button onclick="changeCallResult(${c.idx},'${r}',this)" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">${r}</button>`).join('')}
+          </div>
+        </div>
+        <a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()">Звонить</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+function changeCallResult(idx,result,btn){
+  calls[idx].result=result;
+  saveAllCalls();
+  updateStats();renderCallback();renderCalls();renderCarriers();
+}
+
+function toggleMoreCalls(key){
+  const el=document.getElementById('more-'+key);
+  const btn=document.getElementById('morebtn-'+key);
+  if(!el)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  btn.textContent=open?`▼ Ещё звонков`:'▲ Скрыть';
+}
+function setStatusFilter(val,el){
+  statusFilter=val;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');renderCarriers();
+}
+function setCallFilter(val,el){
+  callFilter=val;
+  document.querySelectorAll('.cft-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderCarriers();
+}
+function clearFilters(){
+  statusFilter='';
+  document.querySelectorAll('.filter-chip').forEach((c,i)=>{c.classList.toggle('active',i===0);});
+  document.getElementById('searchInput').value='';
+  document.getElementById('typeFilter').value='';
+  renderCarriers();
+}
+
+function renderCarriers(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const type=document.getElementById('typeFilter').value;
+  const os=window._orderSearch;
+  let filtered=carriers.filter(c=>{
+    if(os){
+      // order match mode: city must match fromCity only (where cargo loads)
+      const city=c.city.toLowerCase();
+      const mCity=!os.fromCity||city.includes(os.fromCity)||(os.fromCity.length>2&&os.fromCity.includes(city)&&city.length>2);
+      if(!mCity)return false;
+      // optional truck filter
+      if(type){
+        const typeMap={'Самосвал':['самосвал','самаскид'],'Тент':['тент','тенд'],'Рефрижератор':['рефрижератор','реф'],'Цистерна':['цистерна','цыстерна'],'Бортовой':['бортовой','бортовые'],'Зерновоз':['зерновоз'],'Щеповоз':['щеповоз']};
+        const aliases=typeMap[type]||[type.toLowerCase()];
+        if(!aliases.some(a=>c.type.toLowerCase().includes(a)))return false;
+      }
+      return true;
+    }
+    const qDigits=q.replace(/\D/g,'');
+    const phoneDigits=c.phone.replace(/\D/g,'');
+    // strip leading country code from query for flexible matching
+    let qStripped=qDigits;
+    if(qStripped.startsWith('380'))qStripped=qStripped.slice(3);
+    else if(qStripped.startsWith('38'))qStripped=qStripped.slice(2);
+    if(qStripped.startsWith('0'))qStripped=qStripped.slice(1);
+    const mPhone=qDigits.length>0&&(phoneDigits.includes(qDigits)||phoneDigits.slice(3).includes(qStripped));
+    const mQ=!q||c.name.toLowerCase().includes(q)||c.city.toLowerCase().includes(q)||mPhone;
+    const typeMap={'Самосвал':['самосвал','самаскид'],'Тент':['тент','тенд'],'Рефрижератор':['рефрижератор','реф'],'Цистерна':['цистерна','цыстерна'],'Бортовой':['бортовой','бортовые'],'Зерновоз':['зерновоз'],'Щеповоз':['щеповоз']};
+    const aliases=typeMap[type]||[type.toLowerCase()];
+    const mT=!type||aliases.some(a=>c.type.toLowerCase().includes(a));
+    const mS=!statusFilter||c.status===statusFilter;
+    return mQ&&mT&&mS;
+  });
+  // Sort and filter by call status when order search is active
+  const os2=window._orderSearch;
+  if(os2&&os2.orderNum){
+    // Calculate call status for each carrier relative to this order
+    filtered.forEach(c=>{
+      const cCalls=calls.filter(cl=>normalizePhone(cl.phone)===normalizePhone(c.phone)&&cl.orderId===os2.orderNum);
+      if(!cCalls.length){c._callStatus='none';}
+      else{
+        const last=cCalls[cCalls.length-1];
+        if(last.result==='Перезвонить')c._callStatus='callback';
+        else if(last.result==='Думает')c._callStatus='thinking';
+        else if(last.result==='Взял')c._callStatus='took';
+        else if(last.result==='Отказал')c._callStatus='refused';
+        else c._callStatus='other';
+      }
+    });
+    // Update tab counts
+    const counts={all:filtered.length,none:0,callback:0,thinking:0,took:0,refused:0};
+    filtered.forEach(c=>{if(counts[c._callStatus]!==undefined)counts[c._callStatus]++;});
+    document.getElementById('cft-all').textContent=counts.all;
+    document.getElementById('cft-none').textContent=counts.none;
+    document.getElementById('cft-callback').textContent=counts.callback;
+    document.getElementById('cft-thinking').textContent=counts.thinking;
+    document.getElementById('cft-took').textContent=counts.took;
+    document.getElementById('cft-refused').textContent=counts.refused;
+    document.getElementById('callFilterTabs').classList.add('open');
+    // Filter by selected tab
+    if(callFilter!=='all'){
+      filtered=filtered.filter(c=>c._callStatus===callFilter);
+    }
+    // Sort: none first, then callback/thinking, then took, then refused
+    const sortOrder={none:0,callback:1,thinking:1,took:2,refused:3,other:2};
+    filtered.sort((a,b)=>(sortOrder[a._callStatus]||0)-(sortOrder[b._callStatus]||0));
+  } else {
+    document.getElementById('callFilterTabs').classList.remove('open');
+  }
+  document.getElementById('countLine').textContent=filtered.length?`Найдено: ${filtered.length}`:'';
+  const list=document.getElementById('carrierList');
+  if(!filtered.length){list.innerHTML='<div class="empty">Перевозчики не найдены</div>';return;}
+  list.innerHTML=filtered.map(c=>{
+    const key=phoneKey(c.phone)||Math.random().toString(36).substr(2,8);
+    const cls=sClass(c.status);
+    const cCalls=calls.filter(cl=>normalizePhone(cl.phone)===normalizePhone(c.phone)).slice().reverse();
+    const renderCallItem=(cl,ri)=>{
+      const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';
+      const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';
+      return `<div style="padding:8px 12px;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="font-size:14px;font-weight:600;color:var(--accent);font-family:var(--mono)">#${cl.orderId}</span>
+              <span style="font-size:11px;color:var(--text3)">${cl.date}</span>
+              <span class="badge ${rc}">${icon} ${cl.result}</span>
+            </div>
+            ${cl.price?`<div style="font-size:12px;color:var(--accent2);font-family:var(--mono);margin-bottom:2px">${cl.price} грн</div>`:''}
+            ${cl.comment?`<div style="font-size:12px;color:var(--text2)">${cl.comment}</div>`:''}
+          </div>
+          <button class="edit-btn" onclick="openEditCall(${ri})" style="flex-shrink:0;margin-left:8px">✎</button>
+        </div>
+      </div>`;
+    };
+    const visible=cCalls.slice(0,2);
+    const hidden=cCalls.slice(2);
+    const visHTML=visible.map(cl=>renderCallItem(cl,calls.indexOf(cl))).join('');
+    const hidHTML=hidden.length?`<div id="more-${key}" style="display:none">${hidden.map(cl=>renderCallItem(cl,calls.indexOf(cl))).join('')}</div><button onclick="toggleMoreCalls('${key}')" id="morebtn-${key}" style="font-size:11px;color:var(--accent);background:transparent;border:none;cursor:pointer;padding:4px 0;width:100%;text-align:left">▼ Ещё ${hidden.length} звонков</button>`:'' ;
+    const histHTML=cCalls.length?(visHTML+hidHTML):'<div style="font-size:12px;color:var(--text3);padding:6px 0">Звонков ещё не было</div>';
+    const sn=c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const sp=c.phone.replace(/'/g,"\\'");
+    const ph=fullPhone(c.phone);
+    return `<div class="card">
+      <div class="card-head" onclick="toggleCard('${key}')">
+        <div class="avatar av-${cls}">${ini(c.name)}</div>
+        <div class="card-info">
+          <div class="card-name">${c.name}</div>
+          <div class="card-meta">${c.city} · ${c.type||'—'} · ${c.cars||'—'} авт.</div>
+          ${c.comment?`<div style='font-size:10px;color:var(--text3);margin-top:2px'>${c.comment}</div>`:''}
+        </div>
+        <span class="badge b-${cls}" style="margin-right:4px;flex-shrink:0">${sLabel(c.status)}</span>
+        <span class="chevron" id="chev-${key}">›</span>
+      </div>
+      <div class="card-preview" id="preview-${key}">
+        ${visHTML}
+        ${hidHTML}
+        <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
+          <div style="display:flex;gap:6px;align-items:center"><a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()" style="font-size:11px">📞 ${ph}</a><button onclick="event.stopPropagation();navigator.clipboard.writeText('${phoneForCall(c.phone)}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)})" style="background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">📋</button></div>
+
+        </div>
+      </div>
+      <div class="card-body" id="body-${key}">
+        <div class="card-section">
+          <div class="section-label">Контакты</div>
+          <div class="phone-row"><span class="phone-num">${ph}</span><a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()">Позвонить</a></div>
+        </div>
+        <div class="card-section">
+          <div class="section-label">Все звонки</div>
+          ${cCalls.length?cCalls.map(cl=>{const ri=calls.indexOf(cl);const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';return `<div class="history-item"><div class="h-row1"><div><span style="font-size:12px;font-weight:600;color:var(--accent);font-family:var(--mono)">#${cl.orderId}</span><span style="font-size:11px;color:var(--text3);margin-left:8px">${cl.date}</span></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${rc}">${icon} ${cl.result}</span><button class="edit-btn" onclick="openEditCall(${ri})">✎</button></div></div>${cl.price?`<div style="font-size:12px;color:var(--accent2);font-family:var(--mono)">${cl.price} грн</div>`:''} ${cl.comment?`<div style="font-size:12px;color:var(--text2);margin-top:2px">${cl.comment}</div>`:''}</div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);padding:6px 0">Звонков нет</div>'}
+          <button class="add-call-btn" style="margin-top:8px" onclick="openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')">+ Добавить звонок</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleCard(key){
+  const b=document.getElementById(`body-${key}`);const ch=document.getElementById(`chev-${key}`);
+  if(!b)return;b.classList.toggle('open');ch.classList.toggle('open');
+}
+
+function addVehicleRow(){
+  const div=document.createElement('div');
+  div.className='form-row-2 c-vehicle-row';
+  div.style.marginTop='6px';
+  div.innerHTML=`<div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" class="c-cars-inp" placeholder="2"></div><div class="form-row" style="margin:0"><label>Тип машины</label><select class="c-type-inp"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select></div>`;
+  document.getElementById('c-vehicles').appendChild(div);
+}
+function getVehicleRows(){
+  const rows=[...document.querySelectorAll('.c-vehicle-row')];
+  return rows.map(r=>({cars:r.querySelector('.c-cars-inp').value.trim(),type:r.querySelector('.c-type-inp').value})).filter(r=>r.cars||r.type);
+}
+function openAddCarrier(){
+  ['c-name','c-city','c-phone','c-comment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-vehicles').innerHTML=`<div class="form-row-2 c-vehicle-row"><div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" class="c-cars-inp" placeholder="3"></div><div class="form-row" style="margin:0"><label>Тип машины</label><select class="c-type-inp"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select></div></div>`;
+  document.getElementById('c-status').value='Неизвестный';
+  document.getElementById('c-phone-err').style.display='none';
+  openModal('modalCarrier');
+}
+function saveCarrier(){
+  const name=document.getElementById('c-name').value.trim();
+  const rawPhone=document.getElementById('c-phone').value.trim();
+  if(!name||!rawPhone){alert('Укажите имя и телефон');return;}
+  const ph=rawPhone; // use as-is
+  if(carriers.some(c=>normalizePhone(c.phone)===normalizePhone(ph))){
+    document.getElementById('c-phone-err').style.display='block';return;
+  }
+  document.getElementById('c-phone-err').style.display='none';
+  const vehicles=getVehicleRows();
+  const carsStr=vehicles.map(v=>v.cars+' '+v.type).filter(Boolean).join(', ');
+  const typeStr=vehicles.map(v=>v.type).filter(Boolean).join(', ');
+  const comment=document.getElementById('c-comment').value.trim();
+  const c={name,city:document.getElementById('c-city').value.trim(),cars:carsStr,type:typeStr,phone:ph,status:document.getElementById('c-status').value,comment,local:true};
+  carriers.push(c);
+  const local=JSON.parse(localStorage.getItem('localCarriers')||'[]');
+  local.push(c);localStorage.setItem('localCarriers',JSON.stringify(local));
+  closeModal('modalCarrier');renderCarriers();updateStats();
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Перевозчики',row:[c.name,c.city,c.cars,c.type,c.phone,c.status,c.comment||'']})}).catch(()=>{});
+}
+
+function getSelectedTrucks(){return[...document.querySelectorAll('#truckChips .chip.active')].map(el=>el.textContent).join(', ');}
+function setSelectedTrucks(val){const vals=(val||'').split(',').map(v=>v.trim());document.querySelectorAll('#truckChips .chip').forEach(el=>el.classList.toggle('active',vals.includes(el.textContent.trim())));}
+function nextOrderNum(){if(!orders.length)return 1;return Math.max(...orders.map(o=>parseInt(o.num)||0))+1;}
+
+function updateOrderPreview(){
+  const num=document.getElementById('cl-order').value.trim();
+  const preview=document.getElementById('cl-order-preview');
+  if(!num){preview.style.display='none';return;}
+  const o=orders.find(x=>String(x.num)===num);
+  if(!o){preview.style.display='none';return;}
+  const sc=o.status==='Актуально'?'var(--green)':o.status==='Закрыта'?'var(--gray)':o.status==='На паузе'?'var(--yellow)':'var(--red)';
+  preview.style.display='block';
+  preview.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">#${o.num}</span>
+      <span style="font-size:11px;color:${sc};font-weight:500">${o.status}</span>
+    </div>
+    ${o.cargo?`<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}${o.weight?' · '+o.weight:''}</div>`:''}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}${o.dist?' · '+o.dist+' км':''}</div>
+    ${(o.start||o.end)?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">${o.start||'?'} — ${o.end||'?'}</div>`:''}
+    <div style="display:flex;gap:8px">
+      ${o.priceNds?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">НДС </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceNds} грн</span></div>`:''}
+      ${o.priceFop?`<div style="background:var(--surface);border-radius:4px;padding:3px 8px;font-size:11px"><span style="color:var(--text3)">ФОП </span><span style="color:var(--accent2);font-family:var(--mono);font-weight:600">${o.priceFop} грн</span></div>`:''}
+    </div>
+    ${o.truck?`<div style="font-size:11px;color:var(--text3);margin-top:4px">${o.truck}</div>`:''}
+    ${o.note?`<div style="font-size:11px;color:var(--text2);margin-top:4px;padding:4px 6px;background:var(--surface);border-radius:4px">📝 ${o.note}</div>`:''}
+  `;
+}
+function openAddCallForCarrier(phone,name,orderId){
+  editCallIdx=-1;
+  document.getElementById('callModalTitle').textContent='Добавить звонок';
+  document.getElementById('cl-del-btn').style.display='none';
+  const ph=fullPhone(phone);
+  document.getElementById('cl-phone').value=ph;
+  document.getElementById('cl-call-btn').href='tel:'+phoneForCall(ph);
+  document.getElementById('cl-name').value=name;
+  document.getElementById('cl-order').value=orderId||pinnedOrderNum||'';
+  document.getElementById('cl-price').value='';
+  document.getElementById('cl-comment').value='';
+  document.getElementById('cl-result').value='Взял';
+  openModal('modalCall');
+  updateOrderPreview();
+  document.getElementById('carrierPreviewBlock').style.display='none';
+  document.getElementById('carrierPreviewBtn').textContent='▼ Показать карточку перевозчика';
+}
+function openAddCall(){
+  editCallIdx=-1;
+  document.getElementById('callModalTitle').textContent='Добавить звонок';
+  document.getElementById('cl-del-btn').style.display='none';
+  ['cl-phone','cl-name','cl-order','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-result').value='Взял';
+  document.getElementById('cl-call-btn').href='';
+  document.getElementById('cl-order').value=pinnedOrderNum||'';
+  document.getElementById('cl-order-preview').style.display='none';
+  document.getElementById('carrierPreviewBlock').style.display='none';
+  document.getElementById('carrierPreviewBtn').textContent='▼ Показать карточку перевозчика';
+  openModal('modalCall');
+}
+function openAddCallWithOrder(orderId){
+  editCallIdx=-1;
+  document.getElementById('callModalTitle').textContent='Добавить звонок';
+  document.getElementById('cl-del-btn').style.display='none';
+  ['cl-phone','cl-name','cl-price','cl-comment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-result').value='Взял';
+  document.getElementById('cl-call-btn').href='';
+  document.getElementById('cl-order').value=orderId||'';
+  openModal('modalCall');
+  setTimeout(updateOrderPreview, 50);
+}
+function openEditCall(idx){
+  editCallIdx=idx;const c=calls[idx];
+  document.getElementById('callModalTitle').textContent='Редактировать звонок';
+  document.getElementById('cl-del-btn').style.display='block';
+  document.getElementById('cl-phone').value=fullPhone(c.phone||'');
+  document.getElementById('cl-call-btn').href='tel:'+phoneForCall(c.phone||'');
+  document.getElementById('cl-name').value=c.carrierName||'';
+  document.getElementById('cl-order').value=c.orderId||'';
+  setTimeout(updateOrderPreview,50);
+  document.getElementById('cl-price').value=c.price||'';
+  document.getElementById('cl-result').value=c.result||'Взял';
+  document.getElementById('cl-comment').value=c.comment||'';
+  openModal('modalCall');
+}
+function saveCall(){
+  const ph=fullPhone(document.getElementById('cl-phone').value);
+  const obj={phone:ph,carrierName:document.getElementById('cl-name').value.trim(),orderId:document.getElementById('cl-order').value.trim(),price:document.getElementById('cl-price').value.trim(),result:document.getElementById('cl-result').value,comment:document.getElementById('cl-comment').value.trim(),date:editCallIdx>=0?calls[editCallIdx].date:todayStr()};
+  if(editCallIdx>=0){
+    calls[editCallIdx]=obj;
+    saveAllCalls();
+  } else {
+    calls.push(obj);
+    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',row:[obj.date,obj.orderId,rawPhone(obj.phone),'',obj.carrierName,obj.price,obj.result,obj.comment]})}).catch(()=>{});
+  }
+  closeModal('modalCall');renderCarriers();renderCalls();updateStats();
+  if(document.getElementById('callbackPanel').classList.contains('open'))renderCallback();
+}
+function deleteCall(){
+  if(editCallIdx<0)return;if(!confirm('Удалить этот звонок?'))return;
+  calls.splice(editCallIdx,1);
+  saveAllCalls();
+  closeModal('modalCall');renderCarriers();renderCalls();updateStats();
+}
+
+function renderOrders(){
+  const list=document.getElementById('orderList');
+  if(!orders.length){list.innerHTML='<div class="empty">Заявок ещё нет.<br>Нажмите + чтобы добавить.</div>';return;}
+  const hasSent=orders.some(o=>o.tgStatus==='sent');
+  const republishAllBtn=hasSent?`<div style="padding:0 0 10px 0"><button onclick="republishAll()" style="width:100%;background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);color:var(--green);border-radius:var(--radius);padding:10px;font-size:13px;font-weight:500;cursor:pointer">🔄 Перепублікувати всі активні в ТГ</button></div>`:'';
+  list.innerHTML=republishAllBtn+orders.slice().reverse().map((o,ri)=>{
+    const idx=orders.length-1-ri;
+    const sc=o.status==='Актуально'?'b-green':o.status==='Закрыта'?'b-gray':o.status==='На паузе'?'b-yellow':o.status==='Поставлено'?'b-blue':'b-red';
+    const oc=calls.filter(c=>c.orderId===o.num);
+    return `<div class="order-card">
+      <div class="order-head" onclick="toggleOrder(${idx})">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="order-num-big">#${o.num}</div>
+            <button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:12px;background:transparent;border:none;padding:0;cursor:pointer;opacity:${pinnedOrderNum===o.num?'1':'0.3'};color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">📌</button>
+            <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:3px 8px;font-size:12px">✎</button>
+            <button style="background:rgba(0,180,255,.15);border:1px solid rgba(0,180,255,.4);color:#00b4ff;border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px" onclick="event.stopPropagation();sendOrderToTG(${idx})"><span style="color:#00d4aa;font-size:11px">▲</span>ТГ</button>
+            ${o.tgStatus==='sent'?`
+              <button style="background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);color:var(--green);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();republishOrder(${idx})" title="Перепублікувати">🔄</button>
+              <button style="background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.35);color:var(--red);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'normal')">🔴</button>
+              <button style="background:rgba(255,184,77,.12);border:1px solid rgba(255,184,77,.35);color:var(--yellow);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'radar')">⚡️</button>
+            `:''}
+          </div>
+        </div>
+        ${o.tgStatus?`<div style="margin-bottom:4px;font-size:11px;padding:2px 10px;border-radius:20px;display:inline-block;${o.tgStatus==='sent'?'background:rgba(0,212,170,.12);color:var(--green)':o.tgStatus==='radar'?'background:rgba(255,184,77,.15);color:var(--yellow)':'background:rgba(255,92,92,.12);color:var(--red)'}">${o.tgStatus==='sent'?'▲ ТГ активна':o.tgStatus==='radar'?'⚡️ Радар':'🔴 Зафраховано'}</div>`:''}
+        ${o.cargo?`<div class="order-cargo-big">${o.cargo}</div>`:''}
+        ${o.weight?`<span class="order-weight-tag">${o.weight}</span>`:''}
+        <div class="order-route" style="margin-top:4px">${o.fromCity||'—'} → ${o.toCity||'—'} ${o.dist?`<span style="font-size:11px;color:var(--accent2);font-family:var(--mono)">${o.dist} км</span>`:''}</div>
+        ${(o.fromVillage||o.toVillage)?`<div class="order-village">${o.fromVillage||''} → ${o.toVillage||''}</div>`:''}
+        ${(o.start||o.end)?`<div class="order-dates">${fmtDate(o.start)||'?'} — ${fmtDate(o.end)||'?'}</div>`:''}
+        <div class="order-prices" style="margin-top:8px">
+          ${o.priceRequest?`<div class="price-box" style="flex:2"><div class="price-label">Ціна</div><div class="price-val" style="color:var(--yellow)">За запитом</div></div>`:`<div class="price-box"><div class="price-label">НДС</div><div class="price-val">${o.priceNds?o.priceNds+' грн':'—'}</div></div><div class="price-box"><div class="price-label">ФОП</div><div class="price-val">${o.priceFop?o.priceFop+' грн':'—'}</div></div>`}
+        </div>
+        <div class="order-meta">
+          ${o.truck?o.truck.split(',').map(t=>`<span class="order-tag">${t.trim()}</span>`).join(''):''}
+          ${o.cars?`<span class="order-tag">${o.cars} маш.</span>`:''}
+        </div>
+        ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 8px;background:var(--surface2);border-radius:5px">📝 ${o.note}</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          ${(()=>{const took=oc.filter(x=>x.result==='Взял').length;const ref=oc.filter(x=>x.result==='Отказал').length;const cb=oc.filter(x=>x.result==='Перезвонить').length;const th=oc.filter(x=>x.result==='Думает').length;return `<span style="font-size:11px;color:var(--green)">✅${took}</span><span style="font-size:11px;color:var(--red)">❌${ref}</span><span style="font-size:11px;color:var(--yellow)">🔄${cb}</span><span style="font-size:11px;color:var(--accent)">🤔${th}</span><span style="font-size:11px;color:var(--text3)">📞${oc.length}</span>`;})()}
+        </div>
+        <div class="order-footer">
+          <span class="badge ${sc}">${o.status}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
+            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
+          </div>
+        </div>
+      </div>
+      <div class="order-body" id="obody-${idx}">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Звонки по заявке</div>
+        ${oc.length?oc.map(cl=>{
+          const ri2=calls.indexOf(cl);
+          const rc=cl.result==='Взял'?'b-green':cl.result==='Отказал'?'b-red':cl.result==='Думает'?'b-blue':'b-yellow';
+          const icon=cl.result==='Взял'?'✅':cl.result==='Отказал'?'❌':cl.result==='Думает'?'🤔':'🔄';
+          const ph=fullPhone(cl.phone||'');
+          const pk=phoneForCall(cl.phone||'');
+          return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+              <div>
+                <div style="font-size:13px;font-weight:500">${cl.carrierName}</div>
+                <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">${ph}</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="badge ${rc}">${icon} ${cl.result}</span>
+                <button class="edit-btn" onclick="openEditCall(${ri2})">✎</button>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <span style="font-size:11px;color:var(--text3)">${cl.date}</span>
+                ${cl.price?`<span style="font-size:12px;color:var(--accent2);font-family:var(--mono);margin-left:8px">${cl.price} грн</span>`:''}
+              </div>
+              <a class="call-btn" href="tel:${pk}" onclick="event.stopPropagation()" style="font-size:11px;padding:3px 10px">📞</a>
+            </div>
+            ${cl.comment?`<div style="font-size:12px;color:var(--text2);margin-top:4px;padding:4px 8px;background:var(--surface2);border-radius:4px">${cl.comment}</div>`:''}
+          </div>`;
+        }).join(''):'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Звонков нет</div>'}
+        <button class="add-call-btn" style="margin-top:10px" onclick="openAddCallWithOrder('${o.num}')">+ Добавить звонок</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleOrder(idx){const b=document.getElementById(`obody-${idx}`);if(b)b.classList.toggle('open');}
+function openEditOrder(idx){
+  editOrderIdx=idx;const o=orders[idx];
+  document.getElementById('orderModalTitle').textContent='Редактировать заявку';
+  document.getElementById('o-del-btn').style.display='block';
+  document.getElementById('o-num').value=o.num||'';
+  document.getElementById('o-date').value=o.date||'';
+  document.getElementById('o-cargo').value=o.cargo||'';
+  document.getElementById('o-weight').value=o.weight||'';
+  document.getElementById('o-from-city').value=o.fromCity||'';
+  document.getElementById('o-from-village').value=o.fromVillage||'';
+  document.getElementById('o-to-city').value=o.toCity||'';
+  document.getElementById('o-to-village').value=o.toVillage||'';
+  document.getElementById('o-dist').value=o.dist||'';
+  document.getElementById('o-start').value=o.start||'';
+  document.getElementById('o-end').value=o.end||'';
+  document.getElementById('o-cars').value=o.cars||'';
+  document.getElementById('o-price-nds').value=o.priceNds||'';
+  document.getElementById('o-price-fop').value=o.priceFop||'';
+  document.getElementById('o-note').value=o.note||'';
+  document.getElementById('o-status').value=o.status||'Актуально';
+  setPriceRequest(o.priceRequest||false);
+  setSelectedTrucks(o.truck||'');
+  openModal('modalOrder');
+}
+function deleteOrder(){
+  if(editOrderIdx<0)return;if(!confirm('Удалить эту заявку?'))return;
+  orders.splice(editOrderIdx,1);
+  saveAllOrders();
+  closeModal('modalOrder');renderOrders();
+}
+function saveOrder(){
+  const priceReq=document.getElementById('o-price-req-check').dataset.checked==='1';
+  const prevTgStatus=editOrderIdx>=0?(orders[editOrderIdx].tgStatus||''):'';
+  const o={num:document.getElementById('o-num').value,date:document.getElementById('o-date').value,cargo:document.getElementById('o-cargo').value,weight:document.getElementById('o-weight').value,fromCity:document.getElementById('o-from-city').value,fromVillage:document.getElementById('o-from-village').value,toCity:document.getElementById('o-to-city').value,toVillage:document.getElementById('o-to-village').value,dist:document.getElementById('o-dist').value,start:document.getElementById('o-start').value,end:document.getElementById('o-end').value,cars:document.getElementById('o-cars').value,truck:getSelectedTrucks(),priceNds:priceReq?'':document.getElementById('o-price-nds').value,priceFop:priceReq?'':document.getElementById('o-price-fop').value,priceRequest:priceReq,note:document.getElementById('o-note').value,status:document.getElementById('o-status').value,tgStatus:prevTgStatus};
+  if(editOrderIdx>=0){
+    orders[editOrderIdx]=o;
+    saveAllOrders();
+  } else {
+    orders.push(o);
+    fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',row:[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status,'','','']})}).catch(()=>{});
+  }
+  closeModal('modalOrder');renderOrders();
+}
+
+function renderCalls(){
+  const q=document.getElementById('callSearch')?.value?.toLowerCase()||'';
+  const list=document.getElementById('callList');
+  let f=calls.filter(c=>!q||c.orderId?.includes(q)||c.carrierName?.toLowerCase().includes(q)||c.comment?.toLowerCase().includes(q));
+  if(!f.length){list.innerHTML='<div class="empty">Звонков ещё нет</div>';return;}
+  list.innerHTML=f.slice().reverse().map(c=>{
+    const idx=calls.indexOf(c);
+    const rc=c.result==='Взял'?'b-green':c.result==='Отказал'?'b-red':c.result==='Думает'?'b-blue':'b-yellow';
+    const ph=fullPhone(c.phone||'');
+    const key=phoneKey(c.phone||'');
+    return `<div class="card" style="padding:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent)">#${c.orderId}</span>
+        <div style="display:flex;gap:6px;align-items:center"><span class="badge ${rc}">${c.result}</span><button class="edit-btn" onclick="openEditCall(${idx})">✎</button></div>
+      </div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:2px">${c.carrierName}</div>
+      <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${ph}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:12px;color:var(--text2)">${c.date}${c.price?' · '+c.price+' грн':''}</div>
+        ${c.result==='Перезвонить'?`<a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()" style="font-size:11px;padding:3px 10px">Звонить</a>`:''}
+      </div>
+      ${c.comment?`<div style="font-size:11px;color:var(--text2);margin-top:4px">${c.comment}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// РАССЫЛКА
+let genMode='manual';
+function switchGenTab(mode,el){
+  genMode=mode;
+  document.querySelectorAll('.gen-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('gen-manual').style.display=mode==='manual'?'block':'none';
+  document.getElementById('gen-order').style.display=mode==='order'?'block':'none';
+  document.getElementById('genOutput').style.display='none';
+  document.getElementById('copyBtn').style.display='none';
+}
+function fillFromOrder(){
+  const num=document.getElementById('g-order-num').value.trim();
+  const o=orders.find(x=>x.num===num);
+  const prev=document.getElementById('g-order-preview');
+  if(!o){prev.textContent=num?'Заявка не найдена':'';return;}
+  prev.innerHTML=`<span style="color:var(--accent2)">✓</span> ${o.cargo||''} ${o.weight?'· '+o.weight:''}<br>${o.fromCity||''}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||''}${o.toVillage?' / '+o.toVillage:''}<br>${o.start||''}${o.end?' — '+o.end:''} ${o.dist?'· '+o.dist+' км':''}`;
+}
+
+// RU->UA translation dictionary
+const ruUaDict={
+  'Киев':'Київ','Харьков':'Харків','Одесса':'Одеса','Днепр':'Дніпро',
+  'Запорожье':'Запоріжжя','Львов':'Львів','Николаев':'Миколаїв','Винница':'Вінниця',
+  'Херсон':'Херсон','Полтава':'Полтава','Чернигов':'Чернігів','Черкассы':'Черкаси',
+  'Житомир':'Житомир','Сумы':'Суми','Хмельницкий':'Хмельницький','Ровно':'Рівне',
+  'Ивано-Франковск':'Івано-Франківськ','Тернополь':'Тернопіль','Луцк':'Луцьк','Ужгород':'Ужгород',
+  'Черновцы':'Чернівці','Кропивницкий':'Кропивницький','Белая Церковь':'Біла Церква',
+  'Кременчуг':'Кременчук','Мелитополь':'Мелітополь','Никополь':'Нікополь',
+  'Бердянск':'Бердянськ','Краматорск':'Краматорськ','Славянск':'Словʼянськ',
+  'Кривой Рог':'Кривий Ріг','Измаил':'Ізмаїл','Бровары':'Бровари','Борисполь':'Бориспіль',
+  'Буча':'Буча','Ирпень':'Ірпінь','Нежин':'Ніжин','Прилуки':'Прилуки',
+  'Конотоп':'Конотоп','Шостка':'Шостка','Умань':'Умань','Бердичев':'Бердичів',
+  'Фастов':'Фастів','Черноморск':'Чорноморськ','Смела':'Сміла','Канев':'Канів',
+  'Коростень':'Коростень','Жмеринка':'Жмеринка','Казатин':'Козятин',
+  'Пшеница':'Пшениця','Кукуруза':'Кукурудза','Ячмень':'Ячмінь',
+  'Подсолнечник':'Соняшник','Рапс':'Ріпак','Макуха':'Макуха','Шрот':'Шрот',
+  'Мука':'Борошно','Сахар':'Цукор','Песок':'Пісок','Щебень':'Щебінь',
+  'Уголь':'Вугілля','Удобрения':'Добрива','Селитра':'Селітра','Цемент':'Цемент',
+  'Металл':'Метал','Щепа':'Тріска','Опилки':'Тирса',
+  'Зерновоз':'Зерновоз','Самосвал':'Самоскид','Тент':'Тент',
+  'Рефрижератор':'Рефрижератор','Цистерна':'Цистерна','Бортовой':'Бортовий',
+  'Щеповоз':'Тріскавоз','обл.':'обл.','область':'область','г.':'м.'
+};
+function toUA(text){
+  if(!text)return '';
+  let result=text;
+  const keys=Object.keys(ruUaDict).sort((a,b)=>b.length-a.length);
+  for(const k of keys){
+    const re=new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    result=result.replace(re,ruUaDict[k]);
+  }
+  return result;
+}
+
+function generateText(){
+  let cargo,weight,dateFrom,dateTo,from,to,dist,routeNote,priceNds,priceFop,truck;
+  if(genMode==='order'){
+    const num=document.getElementById('g-order-num').value.trim();
+    const o=orders.find(x=>x.num===num);
+    if(!o){alert('Заявка не найдена');return;}
+    cargo=o.cargo||'';weight=o.weight||'';dateFrom=o.start||'';dateTo=o.end||'';
+    from=o.fromCity+(o.fromVillage?', '+o.fromVillage:'');
+    to=o.toCity+(o.toVillage?', '+o.toVillage:'');
+    dist=o.dist||'';routeNote='';priceNds=o.priceNds||'';priceFop=o.priceFop||'';truck=o.truck||'';
+  } else {
+    cargo=document.getElementById('g-cargo').value;weight=document.getElementById('g-weight').value;
+    dateFrom=document.getElementById('g-date-from').value;dateTo=document.getElementById('g-date-to').value;
+    from=document.getElementById('g-from').value;to=document.getElementById('g-to').value;
+    dist=document.getElementById('g-dist').value;routeNote=document.getElementById('g-route-note').value;
+    priceNds=document.getElementById('g-price-nds').value;priceFop=document.getElementById('g-price-fop').value;
+    truck=document.getElementById('g-truck').value;
+  }
+  if(!cargo&&!from){alert('Заполните хотя бы груз и маршрут');return;}
+  const dateStr=dateFrom?(dateTo?`${dateFrom}-${dateTo}`:dateFrom):'';
+  let t='';
+  t+='⭐️⭐️⭐️ ВАЖЛИВА ІНФОРМАЦІЯ ⭐️⭐️⭐️\n\n';
+  t+='‼️ УВАГА ‼️\n';
+  t+='🔔 ПОТРІБНІ МАШИНИ 🔔\n';
+  if(dateStr){t+=`\n🗓 ${dateStr} 🗓\n`;}
+  t+='\n📌 ВАНТАЖ:\n';
+  if(cargo){t+=`📦 ${toUA(cargo)}\n`;}
+  if(weight){t+=`⚖️ Обʼєм: ${toUA(weight)}\n`;}
+  if(from){t+=`\n📌 ДЕ?\n🚛 ${toUA(from)}\n`;}
+  if(to){t+=`\n📌 КУДИ?\n🚛 ${toUA(to)}${routeNote?' ('+toUA(routeNote)+')':''}\n`;}
+  if(dist){t+=`\n📏 Відстань: ${dist} км\n`;}
+  t+='\n💲 ЦІНА:';
+  if(priceNds){t+=` ${priceNds} ПДВ`;}
+  if(priceFop){t+=`  /  ${priceFop} ФОП`;}
+  t+='\n';
+  if(truck){t+=`\n🚛 АВТО: ${toUA(truck)}\n`;}
+  t+='\n📞 Телефон:\n+380633885088\n';
+  t+='\n📲 Viber:\n+37379885088\n';
+  t+='\n👤 Контакт: Максим\n';
+  t+='\n⭐️⭐️⭐️ ДЯКУЄМО ЗА УВАГУ! ⭐️⭐️⭐️';
+  document.getElementById('genOutput').textContent=t;
+  document.getElementById('genOutput').style.display='block';
+  document.getElementById('copyBtn').style.display='block';
+}
+function copyText(){
+  navigator.clipboard.writeText(document.getElementById('genOutput').textContent).then(()=>{
+    document.getElementById('copyBtn').textContent='Скопійовано!';
+    setTimeout(()=>document.getElementById('copyBtn').textContent='Скопіювати текст',2000);
+  });
+}
+
+function findCarriersForOrder(fromCity, toCity, truck, orderNum){
+  switchTab('carriers');
+  document.getElementById('searchInput').value='';
+  document.getElementById('typeFilter').value='';
+  statusFilter='';
+  document.querySelectorAll('.filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  window._orderSearch={fromCity:fromCity.toLowerCase(),toCity:toCity.toLowerCase(),truck:truck,orderNum:orderNum};
+  renderCarriers();
+  // show match banner
+  const banner=document.getElementById('matchBanner');
+  if(banner){
+    banner.innerHTML=`🔍 Перевозчики из: <b>${fromCity}</b>${truck?' · '+truck:''} &nbsp;<button onclick="clearOrderSearch()" style="font-size:11px;background:transparent;border:none;color:var(--accent);cursor:pointer">✕ Сбросить</button>`;
+    banner.style.display='block';
+  }
+  // show active order card
+  if(orderNum){
+    const o=orders.find(x=>String(x.num)===String(orderNum));
+    const card=document.getElementById('activeOrderCard');
+    if(o&&card){
+      card.style.display='block';
+      const oCalls=calls.filter(cl=>cl.orderId===o.num);
+      const tookCount=oCalls.filter(cl=>cl.result==='Взял').length;
+      const refusedCount=oCalls.filter(cl=>cl.result==='Отказал').length;
+      const cbCount=oCalls.filter(cl=>cl.result==='Перезвонить').length;
+      const thinkCount=oCalls.filter(cl=>cl.result==='Думает').length;
+      card.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent)">Заявка #${o.num}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge ${o.status==='Актуально'?'b-green':o.status==='Закрыта'?'b-gray':o.status==='На паузе'?'b-yellow':'b-red'}">${o.status||''}</span>
+            <button onclick="clearOrderSearch()" style="font-size:13px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+          </div>
+        </div>
+        ${o.cargo?`<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">${o.cargo}</div>`:''}
+        ${o.weight?`<span style="display:inline-block;background:rgba(79,124,255,.15);color:var(--accent);font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;margin-bottom:6px">${o.weight}</span>`:''}
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px">${o.fromCity||'—'}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||'—'}${o.toVillage?' / '+o.toVillage:''}</div>
+        ${o.dist?`<div style="font-size:11px;color:var(--accent2);font-family:var(--mono);margin-bottom:6px">📏 ${o.dist} км</div>`:''}
+        ${(o.start||o.end)?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px;background:var(--surface);padding:4px 8px;border-radius:5px;display:inline-block">🗓 ${o.start||'?'} — ${o.end||'?'}</div>`:''}
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          ${o.priceNds?`<div style="flex:1;background:var(--surface);border-radius:6px;padding:6px 10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">НДС</div><div style="font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)">${o.priceNds} грн</div></div>`:''}
+          ${o.priceFop?`<div style="flex:1;background:var(--surface);border-radius:6px;padding:6px 10px;text-align:center"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">ФОП</div><div style="font-size:13px;font-weight:600;color:var(--accent2);font-family:var(--mono)">${o.priceFop} грн</div></div>`:''}
+        </div>
+        ${o.truck?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${o.truck.split(',').map(t=>'<span style="font-size:11px;color:var(--text2);background:var(--surface);padding:3px 8px;border-radius:4px">'+t.trim()+'</span>').join('')}</div>`:''}
+        ${o.cars?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px">🚛 Нужно машин: ${o.cars}</div>`:''}
+        ${o.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px;padding:4px 8px;background:var(--surface);border-radius:4px">📝 ${o.note}</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:6px;margin-top:2px">
+          <span>📞 ${oCalls.length} звонков</span>
+          ${tookCount?'<span style="color:var(--green)">✅ '+tookCount+' взял</span>':''}
+          ${refusedCount?'<span style="color:var(--red)">❌ '+refusedCount+' отказ</span>':''}
+          ${cbCount?'<span style="color:var(--yellow)">🔄 '+cbCount+' перезв.</span>':''}
+          ${thinkCount?'<span style="color:var(--accent)">🤔 '+thinkCount+' думает</span>':''}
+        </div>`;
+    }
+  }
+}
+function togglePinOrder(num){
+  if(pinnedOrderNum===num){pinnedOrderNum='';localStorage.removeItem('pinnedOrder');}
+  else{pinnedOrderNum=num;localStorage.setItem('pinnedOrder',num);}
+  renderOrders();
+}
+function clearOrderSearch(){
+  window._orderSearch=null;
+  callFilter='all';
+  document.getElementById('matchBanner').style.display='none';
+  document.getElementById('activeOrderCard').style.display='none';
+  renderCarriers();
+}
+function toggleCarrierPreview(){
+  const block=document.getElementById('carrierPreviewBlock');
+  const btn=document.getElementById('carrierPreviewBtn');
+  const open=block.style.display!=='none';
+  block.style.display=open?'none':'block';
+  btn.textContent=open?'▼ Показать карточку перевозчика':'▲ Скрыть карточку перевозчика';
+  if(!open)updateCarrierPreview();
+}
+function updateCarrierPreview(){
+  const phone=document.getElementById('cl-phone').value;
+  const name=document.getElementById('cl-name').value;
+  const c=carriers.find(x=>normalizePhone(x.phone)===normalizePhone(phone)||x.name===name);
+  if(!c)return;
+  document.getElementById('cp-name').value=c.name||'';
+  document.getElementById('cp-city').value=c.city||'';
+  document.getElementById('cp-cars').value=c.cars||'';
+  document.getElementById('cp-type').value=c.type||'Зерновоз';
+  document.getElementById('cp-status').value=c.status==='Надійний'?'Надёжный':c.status==='Нейтральний'?'Нейтральный':c.status==='Проблемний'?'Проблемный':'Неизвестный';
+  document.getElementById('cp-comment').value=c.comment||'';
+}
+function saveCarrierFromCall(){
+  const phone=document.getElementById('cl-phone').value;
+  const idx=carriers.findIndex(x=>normalizePhone(x.phone)===normalizePhone(phone));
+  if(idx===-1){alert('Перевозчик не найден в базе');return;}
+  carriers[idx].name=document.getElementById('cp-name').value.trim();
+  carriers[idx].city=document.getElementById('cp-city').value.trim();
+  carriers[idx].cars=document.getElementById('cp-cars').value.trim();
+  carriers[idx].type=document.getElementById('cp-type').value;
+  carriers[idx].status=document.getElementById('cp-status').value;
+  carriers[idx].comment=document.getElementById('cp-comment').value.trim();
+  // sync name in call form
+  document.getElementById('cl-name').value=carriers[idx].name;
+  // save to sheets
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Перевозчики',row:[carriers[idx].name,carriers[idx].city,carriers[idx].cars,carriers[idx].type,carriers[idx].phone,carriers[idx].status,carriers[idx].comment||'']})}).catch(()=>{});
+  renderCarriers();
+  alert('Сохранено!');
+}
+function saveAllOrders(){
+  const rows=orders.map(o=>[o.num,o.date,o.cargo,o.weight,o.fromCity,o.fromVillage,o.toCity,o.toVillage,o.dist,o.start,o.end,o.cars,o.truck,o.priceNds,o.priceFop,o.note,o.status,o.tgMessageId||'',o.tgTeaserId||'',o.tgStatus||'']);
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Заявки',action:'replace_all',rows})}).catch(()=>{});
+}
+function saveAllCalls(){
+  const rows=calls.map(c=>[c.date,c.orderId,rawPhone(c.phone),'',c.carrierName,c.price,c.result,c.comment]);
+  fetch(API_URL,{method:'POST',body:JSON.stringify({sheet:'Звонки',action:'replace_all',rows})}).catch(()=>{});
+}
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['carriers','orders','calls','gen'][i]===tab));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`sec-${tab}`).classList.add('active');
+  document.getElementById('searchBar').style.display=tab==='carriers'?'flex':'none';
+  const fab=document.getElementById('fabBtn');
+  fab.style.display=(tab==='orders'||tab==='carriers')?'flex':'none';
+  fab.onclick=tab==='orders'?openFabOrder:openAddCarrier;
+  if(tab==='orders')renderOrders();
+  if(tab==='calls')renderCalls();
+}
+function openFabOrder(){
+  editOrderIdx=-1;
+  document.getElementById('orderModalTitle').textContent='Новая заявка';
+  document.getElementById('o-del-btn').style.display='none';
+  ['o-from-city','o-from-village','o-to-city','o-to-village','o-cars','o-price-nds','o-price-fop','o-note','o-cargo','o-weight','o-dist'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('o-num').value=nextOrderNum();
+  document.getElementById('o-date').value=todayStr();
+  document.getElementById('o-start').value='';document.getElementById('o-end').value='';
+  document.getElementById('o-status').value='Актуально';
+  setSelectedTrucks('');
+  setPriceRequest(false);
+  openModal('modalOrder');
+}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+document.getElementById('fabBtn').onclick=openAddCarrier;
+
+// Swipe navigation disabled
+
+async function sendOrderToTG(idx){
+  const o=orders[idx];
+  if(!o){showToast('❌ Заявка не найдена');return;}
+  if(!confirm('Отправить заявку #'+o.num+' в Telegram канал?'))return;
+  try{
+    const resp=await fetch(BOT_URL+'/send_order',{
+      method:'POST',
+      mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        orderNum:o.num,
+        cargo:toUA(o.cargo||''),
+        weight:toUA(o.weight||''),
+        fromCity:toUA(o.fromCity||''),
+        fromVillage:toUA(o.fromVillage||''),
+        toCity:toUA(o.toCity||''),
+        toVillage:toUA(o.toVillage||''),
+        dist:o.dist||'',
+        start:o.start||'',
+        end:o.end||'',
+        cars:o.cars||'',
+        truck:toUA(o.truck||''),
+        priceNds:o.priceNds||'',
+        priceFop:o.priceFop||'',
+        priceRequest:o.priceRequest||false,
+        note:toUA(o.note||'')
+      })
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      orders[idx].tgStatus='sent';
+      orders[idx].tgMessageId=result.message_id||'';
+      orders[idx].tgTeaserId=result.teaser_message_id||'';
+      saveAllOrders();
+      renderOrders();
+      showToast('✅ Відправлено! Радар: '+(result.radar||0)+' перевізників');
+    } else {
+      showToast('❌ Ошибка: '+(result.error||'неизвестная'));
+    }
+  }catch(e){
+    showToast('❌ Ошибка отправки: '+e.message);
+  }
+}
+
+// Таймер публікації в канали
+function startPublishTimer(idx, orderNum, seconds){
+  const key='_publishTimer_'+orderNum;
+  clearTimeout(window[key]);
+  // Показуємо кнопку з таймером на карточці
+  window._publishCountdown=window._publishCountdown||{};
+  window._publishCountdown[orderNum]={seconds, idx};
+  updatePublishBtn(orderNum, seconds);
+  const interval=setInterval(()=>{
+    seconds--;
+    if(seconds<=0){
+      clearInterval(interval);
+      window._publishCountdown[orderNum]=null;
+      renderOrders();
+      publishNow(idx, orderNum);
+    } else {
+      window._publishCountdown[orderNum].seconds=seconds;
+      updatePublishBtn(orderNum, seconds);
+    }
+  }, 1000);
+  window[key]=interval;
+}
+
+function updatePublishBtn(orderNum, seconds){
+  const btn=document.getElementById('publish-btn-'+orderNum);
+  if(btn){
+    const m=Math.floor(seconds/60);
+    const s=seconds%60;
+    btn.textContent='📢 Публікація через '+(m>0?m+'хв ':'')+s+'с';
+  }
+}
+
+async function publishNow(idx, orderNum){
+  showToast('📢 Публікуємо в канали...');
+  try{
+    const resp=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'publish_telegram', orderNum:orderNum})
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      orders[idx]._pendingPublish=false;
+      orders[idx].tgMessageId=result.message_id||'';
+      orders[idx].tgTeaserId=result.teaser_message_id||'';
+      saveAllOrders();
+      renderOrders();
+      showToast('✅ Опубліковано в VIP та відкритий канал!');
+    } else {
+      showToast('❌ Помилка публікації: '+(result.error||result.msg||''));
+    }
+  }catch(e){
+    showToast('❌ Помилка: '+e.message);
+  }
+}
+
+async function republishOrder(idx){
+  const o=orders[idx];
+  if(!o){return;}
+  showToast('🔄 Перепублікуємо...');
+  try{
+    const resp=await fetch(BOT_URL+'/republish_order',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        orderNum:o.num,
+        messageId:o.tgMessageId||'',
+        teaserMessageId:o.tgTeaserId||'',
+        cargo:o.cargo,weight:o.weight,
+        fromCity:o.fromCity,fromVillage:o.fromVillage,
+        toCity:o.toCity,toVillage:o.toVillage,
+        dist:o.dist,start:o.start,end:o.end,
+        cars:o.cars,truck:toUA(o.truck||''),
+        priceNds:o.priceNds,priceFop:o.priceFop,
+        priceRequest:o.priceRequest||false,
+        note:toUA(o.note||'')
+      })
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      orders[idx].tgMessageId=result.message_id||'';
+      orders[idx].tgTeaserId=result.teaser_message_id||'';
+      orders[idx].tgStatus='sent';
+      saveAllOrders();
+      renderOrders();
+      showToast('✅ Перепубліковано!');
+    } else {
+      showToast('❌ Помилка: '+(result.error||''));
+    }
+  }catch(e){
+    showToast('❌ Помилка: '+e.message);
+  }
+}
+
+async function republishAll(){
+  const active=orders.filter(o=>o.tgStatus==='sent'||o.tgStatus==='');
+  if(!active.length){showToast('Немає активних заявок');return;}
+  showToast('🔄 Перепублікуємо всі ('+active.length+')...');
+  let ok=0;
+  for(const o of active){
+    const idx=orders.indexOf(o);
+    try{
+      const resp=await fetch(BOT_URL+'/republish_order',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          orderNum:o.num,
+          messageId:o.tgMessageId||'',
+          teaserMessageId:o.tgTeaserId||'',
+          cargo:o.cargo,weight:o.weight,
+          fromCity:o.fromCity,fromVillage:o.fromVillage,
+          toCity:o.toCity,toVillage:o.toVillage,
+          dist:o.dist,start:o.start,end:o.end,
+          cars:o.cars,truck:toUA(o.truck||''),
+          priceNds:o.priceNds,priceFop:o.priceFop,
+          priceRequest:o.priceRequest||false,
+          note:toUA(o.note||'')
+        })
+      });
+      const result=await resp.json();
+      if(result.status==='ok'){
+        orders[idx].tgMessageId=result.message_id||'';
+        orders[idx].tgTeaserId=result.teaser_message_id||'';
+        orders[idx].tgStatus='sent';
+        ok++;
+      }
+      await new Promise(r=>setTimeout(r,500)); // пауза між запитами
+    }catch(e){
+      logger.error('republishAll error:',e);
+    }
+  }
+  saveAllOrders();
+  renderOrders();
+  showToast('✅ Перепубліковано: '+ok+' заявок');
+}
+
+// Закрыть заявку в ТГ
+let _closeTGIdx = -1;
+function confirmCloseTG2(idx, closeType){
+  if(!confirm(closeType==='radar'?'Зафрахтовано через Радар 🔴⚡️?':'Зафрахтовано 🔴?'))return;
+  closeTGOrder(idx, closeType);
+}
+function openCloseTG(idx){
+  const o=orders[idx];
+  if(!o)return;
+  if(o.tgStatus==='normal'||o.tgStatus==='radar'){showToast('⚠️ Заявка вже закрита в ТГ');return;}
+  _closeTGIdx = idx;
+  document.getElementById('closeTGTitle').textContent = 'Закрити заявку #'+o.num+' в ТГ';
+  openModal('modalCloseTG');
+}
+function confirmCloseTG(closeType){
+  closeModal('modalCloseTG');
+  if(_closeTGIdx < 0) return;
+  closeTGOrder(_closeTGIdx, closeType);
+  _closeTGIdx = -1;
+}
+
+async function closeTGOrder(idx, closeType){
+  const o=orders[idx];
+  if(!o)return;
+  showToast('⏳ Закриваємо в ТГ...');
+  try{
+    const resp=await fetch(BOT_URL+'/close_order',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        orderNum:o.num,
+        messageId:o.tgMessageId||'',
+        closeType:closeType,
+        originalText:buildVipText(o)
+      })
+    });
+    const result=await resp.json();
+    if(result.status==='ok'){
+      orders[idx].tgStatus=closeType;
+      saveAllOrders();
+      renderOrders();
+      showToast(closeType==='radar'?'⚡️ Зафраховано через Радар':'🔴 Зафраховано в ТГ');
+    } else {
+      showToast('❌ '+(result.error||result.msg||'помилка'));
+    }
+  }catch(e){
+    showToast('❌ Помилка: '+e.message);
+  }
+}
+
+function buildVipText(o){
+  const from=(o.fromCity||'')+(o.fromVillage?', '+o.fromVillage:'');
+  const to=(o.toCity||'')+(o.toVillage?', '+o.toVillage:'');
+  let priceText=o.priceRequest?'За запитом':(o.priceNds&&o.priceFop?o.priceNds+' грн (ПДВ) / '+o.priceFop+' грн (ФОП)':o.priceNds?o.priceNds+' грн (ПДВ)':o.priceFop?o.priceFop+' грн (ФОП)':'договірна');
+  let dateText=o.start&&o.end?o.start+' — '+o.end:o.start?'з '+o.start:'';
+  return '🚛 <b>ЗАЯВКА #'+o.num+'</b>\n\n'+
+    '📍 <b>Маршрут:</b> '+from+' → '+to+'\n'+
+    (o.dist?'📏 <b>Відстань:</b> '+o.dist+' км\n':'')+
+    '📦 <b>Вантаж:</b> '+toUA(o.cargo||'')+(o.weight?' — '+o.weight:'')+'\n'+
+    '🚛 <b>Тип авто:</b> '+toUA(o.truck||'')+'\n'+
+    (o.cars?'🔢 <b>Кількість машин:</b> '+o.cars+'\n':'')+
+    '💰 <b>Ціна:</b> '+priceText+'\n'+
+    (dateText?'📅 <b>Дати:</b> '+dateText+'\n':'')+
+    (o.note?'\n📝 '+toUA(o.note)+'\n':'')+
+    '\n📞 <b>Контакт:</b> +380633885088 (Максим)';
+}
+
+// Запит ціни — галочка
+function togglePriceRequest(){
+  const check=document.getElementById('o-price-req-check');
+  const isOn=check.dataset.checked==='1';
+  setPriceRequest(!isOn);
+}
+function setPriceRequest(on){
+  const check=document.getElementById('o-price-req-check');
+  const fields=document.getElementById('o-price-fields');
+  check.dataset.checked=on?'1':'0';
+  check.style.background=on?'var(--accent)':'transparent';
+  check.style.borderColor=on?'var(--accent)':'var(--border)';
+  check.innerHTML=on?'<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'';
+  fields.style.opacity=on?'0.35':'1';
+  fields.style.pointerEvents=on?'none':'auto';
+}
+
+function showToast(msg){
+  let el=document.getElementById('__toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='__toast';
+    el.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d26;color:#e8eaf2;padding:9px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+  el.style.opacity='1';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.opacity='0',2500);
+}
+
+loadAll();
+</script>
+
+<!-- МОДАЛ: ЗАКРИТИ В ТГ -->
+<div class="modal-bg" id="modalCloseTG">
+  <div class="modal" style="max-height:300px">
+    <div class="modal-title" id="closeTGTitle">Закрити заявку в ТГ</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Оберіть варіант закриття:</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="confirmCloseTG('normal')" style="width:100%;background:rgba(255,92,92,.15);border:1px solid rgba(255,92,92,.4);border-radius:8px;color:var(--red);font-size:14px;font-weight:500;padding:12px;cursor:pointer">
+        🔴 Зафраховано
+      </button>
+      <button onclick="confirmCloseTG('radar')" style="width:100%;background:rgba(255,184,77,.12);border:1px solid rgba(255,184,77,.35);border-radius:8px;color:var(--yellow);font-size:14px;font-weight:500;padding:12px;cursor:pointer">
+        ⚡️ Зафраховано через Радар
+      </button>
+    </div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeModal('modalCloseTG')">Скасувати</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
