@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Нова заявка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6fa;--surface:#fff;--surface2:#f0f2f8;--border:#e2e6f0;--border2:#c8cede;
+  --accent:#185FA5;--accent-light:#E6F1FB;
+  --text:#1a1d2e;--text2:#5a6080;--text3:#9aa0bb;
+  --green:#1D9E75;--red:#A32D2D;--red-bg:#FCEBEB;
+  --radius:12px;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;padding-bottom:90px}
+.header{background:#185FA5;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.h-icon{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.h-title{font-size:18px;font-weight:600;color:#E6F1FB}
+.h-sub{font-size:12px;color:rgba(255,255,255,.55);font-family:var(--mono);margin-top:1px}
+.content{padding:14px}
+.sec-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);font-weight:500;margin:16px 0 8px;padding:0 2px}
+.sec-lbl:first-child{margin-top:0}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:4px}
+.row{display:flex;align-items:center;padding:12px 14px;border-bottom:0.5px solid var(--border);gap:10px;min-height:48px}
+.row:last-child{border-bottom:none}
+.row-lbl{font-size:14px;color:var(--text);min-width:100px;flex-shrink:0}
+.row-lbl.req::after{content:' *';color:var(--red)}
+.row input,.row select{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;text-align:right;font-family:var(--font);min-width:0;-webkit-appearance:none}
+.row input::placeholder{color:var(--text3)}
+.row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.row-val{flex:1;text-align:right;font-size:14px;color:var(--text3);cursor:pointer;user-select:none}
+.row-val.set{color:var(--text)}
+.chev{color:var(--text3);font-size:11px;margin-left:2px;flex-shrink:0}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 14px}
+.chip{font-size:13px;padding:7px 13px;border-radius:20px;background:var(--surface2);border:0.5px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+.chip.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600}
+
+/* Price */
+.p-row{display:flex;align-items:center;padding:11px 14px;border-bottom:0.5px solid var(--border);gap:10px}
+.p-row:last-child{border-bottom:none}
+.p-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.p-check.on{background:var(--accent);border-color:var(--accent)}
+.p-check.on::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.p-lbl{font-size:14px;color:var(--text);min-width:75px;cursor:pointer}
+.p-inp{flex:1;display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.p-inp input{background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:14px;width:95px;text-align:right;outline:none;font-family:var(--font);transition:opacity .15s}
+.p-inp input:disabled{opacity:.35}
+.p-inp .cur{font-size:12px;color:var(--text3)}
+
+/* Contact switcher */
+.switcher{display:flex;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:3px;margin-bottom:4px}
+.sw-btn{flex:1;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .2s;user-select:none}
+.sw-btn.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* Error */
+.err-box{background:var(--red-bg);border:0.5px solid #F5BFBF;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-top:8px;display:none}
+.err-box.show{display:block}
+
+/* Submit */
+.save-wrap{position:fixed;bottom:0;left:0;right:0;padding:12px 14px;background:rgba(245,246,250,.96);border-top:0.5px solid var(--border);backdrop-filter:blur(8px)}
+.save-btn{width:100%;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--font);font-size:17px;font-weight:600;padding:15px;cursor:pointer;transition:opacity .15s}
+.save-btn:active{opacity:.85}
+.save-btn:disabled{opacity:.4;cursor:default}
+
+/* Modal */
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end}
+.modal-wrap.show{display:flex}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:75vh;display:flex;flex-direction:column;animation:up .22s ease}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-head{padding:14px 16px 12px;font-size:16px;font-weight:600;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-close{color:var(--accent);font-size:14px;cursor:pointer}
+.modal-body{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.m-item{padding:14px 16px;border-bottom:0.5px solid var(--border);font-size:15px;color:var(--text);cursor:pointer}
+.m-item:last-child{border-bottom:none}
+.m-item:active{background:var(--accent-light)}
+.m-item.sel{color:var(--accent);font-weight:600}
+.m-item.sel::after{content:' ✓'}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-icon">📦</div>
+  <div>
+    <div class="h-title">Нова заявка</div>
+    <div class="h-sub">Заповніть форму відправки</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- МАРШРУТ -->
+  <div class="sec-lbl">Маршрут</div>
+  <div class="card">
+    <div class="row" onclick="openModal('from')">
+      <span class="row-lbl req">Область від</span>
+      <span class="row-val" id="dsp-region-from">Оберіть</span>
+      <span class="chev">›</span>
+    </div>
+    <div class="row">
+      <span class="row-lbl req">Місто від</span>
+      <input type="text" id="city_from" placeholder="Введіть місто" autocomplete="off">
+    </div>
+    <div class="row" onclick="openModal('to')">
+      <span class="row-lbl req">Область до</span>
+      <span class="row-val" id="dsp-region-to">Оберіть</span>
+      <span class="chev">›</span>
+    </div>
+    <div class="row">
+      <span class="row-lbl req">Місто до</span>
+      <input type="text" id="city_to" placeholder="Введіть місто" autocomplete="off">
+    </div>
+    <div class="row">
+      <span class="row-lbl">Відстань</span>
+      <input type="number" id="distance" placeholder="км" inputmode="numeric">
+    </div>
+  </div>
+
+  <!-- ВАНТАЖ -->
+  <div class="sec-lbl">Вантаж</div>
+  <div class="card">
+    <div class="row">
+      <span class="row-lbl req">Тип вантажу</span>
+      <input type="text" id="cargo" placeholder="Зерно, соняшник..." autocomplete="off">
+    </div>
+    <div class="row">
+      <span class="row-lbl req">Вага, т</span>
+      <input type="number" id="weight" placeholder="0.0" inputmode="decimal" step="0.1">
+    </div>
+    <div class="row">
+      <span class="row-lbl">К-сть авто</span>
+      <input type="number" id="car_count" placeholder="1" inputmode="numeric" value="1">
+    </div>
+  </div>
+
+  <!-- ТИП АВТО -->
+  <div class="sec-lbl">Тип авто <span style="color:var(--red)">*</span></div>
+  <div class="card">
+    <div class="chips" id="truck-chips"></div>
+  </div>
+
+  <!-- ЦІНА -->
+  <div class="sec-lbl">Ціна (необов'язково)</div>
+  <div class="card" id="price-rows"></div>
+
+  <!-- КОНТАКТ -->
+  <div class="sec-lbl">Контакт для зв'язку</div>
+  <div class="switcher">
+    <div class="sw-btn on" id="sw-my" onclick="setContact('my')">📱 Мій номер</div>
+    <div class="sw-btn" id="sw-other" onclick="setContact('other')">✏️ Інший номер</div>
+  </div>
+  <div class="card" id="custom-phone-card" style="display:none">
+    <div class="row">
+      <span class="row-lbl">Телефон</span>
+      <input type="tel" id="custom_phone" placeholder="+380..." inputmode="tel">
+    </div>
+  </div>
+
+  <div class="err-box" id="err-box"></div>
+
+</div>
+
+<div class="save-wrap">
+  <button class="save-btn" id="save-btn" onclick="submit()">Подати заявку</button>
+</div>
+
+<!-- Modal регіон -->
+<div class="modal-wrap" id="modal" onclick="closeModalOut(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="modal-title">Область</span>
+      <span class="modal-close" onclick="closeModal()">Закрити</span>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+
+const API = 'https://vantazh-api-production.up.railway.app';
+const REGIONS = ['Вінницька','Волинська','Дніпропетровська','Донецька','Житомирська','Закарпатська','Запорізька','Івано-Франківська','Київська','Кіровоградська','Луганська','Львівська','Миколаївська','Одеська','Полтавська','Рівненська','Сумська','Тернопільська','Харківська','Херсонська','Хмельницька','Черкаська','Чернівецька','Чернігівська'];
+const TRUCKS = ['Зерновоз','Самосвал','Тент','Рефрижератор','Цистерна','Бортовий','Щеповоз'];
+const PRICES = [{k:'fop',l:'ФОП'},{k:'ndv',l:'НДС'},{k:'nal',l:'Нал'},{k:'card',l:'На карту'}];
+
+let st = {region_from:'',region_to:'',truck:'',contact:'my',modal:null};
+const tgUser = tg.initDataUnsafe?.user || {};
+
+// Ініціалізація
+(function init(){
+  // Chips
+  document.getElementById('truck-chips').innerHTML = TRUCKS.map(t=>
+    `<div class="chip" data-t="${t}" onclick="selTruck('${t}')">${t}</div>`
+  ).join('');
+
+  // Price rows
+  document.getElementById('price-rows').innerHTML = PRICES.map(p=>`
+    <div class="p-row">
+      <div class="p-check" id="pc-${p.k}" onclick="togPrice('${p.k}')"></div>
+      <div class="p-lbl" onclick="togPrice('${p.k}')">${p.l}</div>
+      <div class="p-inp">
+        <input type="number" id="pi-${p.k}" placeholder="0" inputmode="numeric" disabled>
+        <span class="cur">грн/т</span>
+      </div>
+    </div>
+  `).join('');
+})();
+
+function selTruck(t){
+  st.truck=t;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.t===t));
+}
+
+function togPrice(k){
+  const c=document.getElementById('pc-'+k), inp=document.getElementById('pi-'+k);
+  const on=c.classList.toggle('on');
+  inp.disabled=!on;
+  if(on) inp.focus(); else inp.value='';
+}
+
+function setContact(m){
+  st.contact=m;
+  document.getElementById('sw-my').classList.toggle('on',m==='my');
+  document.getElementById('sw-other').classList.toggle('on',m==='other');
+  document.getElementById('custom-phone-card').style.display=m==='other'?'block':'none';
+}
+
+function openModal(side){
+  st.modal=side;
+  document.getElementById('modal-title').textContent=side==='from'?'Область відправлення':'Область призначення';
+  const cur=side==='from'?st.region_from:st.region_to;
+  document.getElementById('modal-body').innerHTML=REGIONS.map(r=>
+    `<div class="m-item${r===cur?' sel':''}" onclick="selRegion('${r}')">${r}</div>`
+  ).join('');
+  document.getElementById('modal').classList.add('show');
+  document.body.style.overflow='hidden';
+  if(cur) setTimeout(()=>{const el=document.querySelector('.m-item.sel');if(el)el.scrollIntoView({block:'center'})},80);
+}
+
+function selRegion(r){
+  if(st.modal==='from'){
+    st.region_from=r;
+    const el=document.getElementById('dsp-region-from');
+    el.textContent=r; el.classList.add('set');
+    setTimeout(()=>document.getElementById('city_from').focus(),300);
+  } else {
+    st.region_to=r;
+    const el=document.getElementById('dsp-region-to');
+    el.textContent=r; el.classList.add('set');
+    setTimeout(()=>document.getElementById('city_to').focus(),300);
+  }
+  closeModal();
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  document.body.style.overflow='';
+}
+function closeModalOut(e){if(e.target===document.getElementById('modal'))closeModal();}
+
+function getPriceVal(k){
+  const c=document.getElementById('pc-'+k);
+  return c&&c.classList.contains('on') ? document.getElementById('pi-'+k).value.trim() : '';
+}
+
+function showErr(msg){
+  const el=document.getElementById('err-box');
+  el.textContent='⚠️ '+msg;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function clearErr(){document.getElementById('err-box').classList.remove('show');}
+
+async function submit(){
+  clearErr();
+  if(!st.region_from) return showErr('Оберіть область відправлення');
+  if(!st.region_to)   return showErr('Оберіть область призначення');
+  if(!document.getElementById('city_from').value.trim()) return showErr('Введіть місто відправлення');
+  if(!document.getElementById('city_to').value.trim())   return showErr('Введіть місто призначення');
+  if(!document.getElementById('cargo').value.trim())     return showErr('Введіть тип вантажу');
+  if(!document.getElementById('weight').value.trim())    return showErr('Введіть вагу');
+  if(!st.truck)   return showErr('Оберіть тип авто');
+  if(st.contact==='other'){
+    const ph=document.getElementById('custom_phone').value.trim();
+    if(!ph) return showErr('Введіть контактний номер');
+    if(ph.replace(/\D/g,'').length<10) return showErr('Невірний формат номера');
+  }
+
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Відправляємо...';
+
+  const payload={
+    telegram_id: tgUser.id||0,
+    region_from: st.region_from,
+    city_from:   document.getElementById('city_from').value.trim(),
+    region_to:   st.region_to,
+    city_to:     document.getElementById('city_to').value.trim(),
+    distance:    document.getElementById('distance').value.trim()||null,
+    cargo:       document.getElementById('cargo').value.trim(),
+    weight:      document.getElementById('weight').value.trim(),
+    truck_type:  st.truck,
+    car_count:   document.getElementById('car_count').value||1,
+    price_fop:   getPriceVal('fop'),
+    price_ndv:   getPriceVal('ndv'),
+    price_nal:   getPriceVal('nal'),
+    price_card:  getPriceVal('card'),
+    contact_phone: st.contact==='other' ? document.getElementById('custom_phone').value.replace(/\D/g,'') : '',
+    contact_name:  tgUser.first_name||'',
+    contact_changed: st.contact==='other',
+  };
+
+  try{
+    const r=await fetch(`${API}/api/save_logist_order`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const res=await r.json();
+    if(res.status==='ok'){
+      tg.sendData(JSON.stringify({action:'order_submitted',order_id:res.order_id}));
+      tg.close();
+    } else {
+      const msgs={daily_limit:'Досягнуто ліміт 5 заявок на день',duplicate_route:'Такий маршрут вже є сьогодні',not_logist:'Ця функція тільки для логістів'};
+      showErr(msgs[res.message]||('Помилка: '+(res.message||'невідома')));
+      btn.disabled=false; btn.textContent='Подати заявку';
+    }
+  }catch(e){
+    showErr('Помилка з\'єднання. Спробуйте ще раз.');
+    btn.disabled=false; btn.textContent='Подати заявку';
+  }
+}
+</script>
+</body>
+</html>
