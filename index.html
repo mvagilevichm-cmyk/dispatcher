@@ -1764,12 +1764,18 @@ function renderMod(){
     return `<div class="mcard" id="mc-${o.id}">
       <div class="mcard-top">
         <div>
-          <div class="mcard-route">📍 ${o.city_from||'—'} → ${o.city_to||'—'}</div>
+          <div class="mcard-route">📍 ${o.city_from||'—'} → ${o.city_to||'—'}${o.distance?' · '+o.distance+' км':''}</div>
           <div class="mcard-meta">📦 ${o.cargo||'—'} · ${o.weight||'—'} т · 🚛 ${o.truck_type||'—'}${o.car_count>1?' · '+o.car_count+' авто':''}</div>
         </div>
-        <span class="mcard-status ${statClass}">${statLabel}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${o.order_num?`<span style="font-size:11px;font-weight:700;color:var(--accent);font-family:var(--mono)">#${o.order_num}</span>`:''}
+          <span class="mcard-status ${statClass}">${statLabel}</span>
+        </div>
       </div>
-      <div class="mcard-logist">👤 ${o.logist_name||'—'}${o.company?' · '+o.company:''} · 📞 ${o.contact_phone||o.logist_phone||'—'}</div>
+      <div class="mcard-logist" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+        <span>👤 <b>${o.logist_name||'—'}</b>${o.company?' · '+o.company:''}</span>
+        <a href="tel:${o.contact_phone||o.logist_phone||''}" style="color:var(--accent);font-weight:600;font-size:13px;text-decoration:none">📞 ${o.contact_phone||o.logist_phone||'—'}</a>
+      </div>
       ${prices?`<div class="mcard-prices">💰 ${prices}</div>`:''}
       <div style="font-size:11px;color:var(--text3)">${o.created_at||''}</div>
       ${actions}
