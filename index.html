@@ -1752,7 +1752,7 @@ function renderMod(){
 
     const actions=o.status==='pending'?`
       <div class="mcard-actions">
-        <button class="m-btn m-btn-ok" onclick="modAction(${o.id},'approved')">✅ Прийняти</button>
+        <button class="m-btn m-btn-ok" onclick="publishLogistOrder(${o.id})">📢 Опублікувати</button>
         <button class="m-btn m-btn-rej" onclick="toggleReject(${o.id})">❌ Відхилити</button>
       </div>
       <div class="reject-wrap" id="rw-${o.id}">
@@ -1799,6 +1799,33 @@ async function modAction(id,status){
       renderMod();
     }
   }catch(e){alert('Помилка: '+e.message);}
+}
+
+async function publishLogistOrder(id){
+  if(!confirm('Опублікувати заявку в канал?')) return;
+  const btn = document.querySelector(`#mc-${id} .m-btn-ok`);
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Публікую...'; }
+  try{
+    const r=await fetch(`${API_URL}/api/publish_logist_order`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({order_id:id})
+    });
+    const res=await r.json();
+    if(res.status==='ok'){
+      const o=modOrders.find(x=>x.id===id);
+      if(o) o.status='published';
+      const pending=modOrders.filter(o=>o.status==='pending').length;
+      document.getElementById('badge-pending').textContent=pending;
+      renderMod();
+    } else {
+      alert('Помилка публікації: '+(res.message||'невідома'));
+      if(btn){ btn.disabled=false; btn.textContent='📢 Опублікувати'; }
+    }
+  }catch(e){
+    alert('Помилка: '+e.message);
+    if(btn){ btn.disabled=false; btn.textContent='📢 Опублікувати'; }
+  }
 }
 
 loadAll();
