@@ -124,10 +124,16 @@
   .mod-f.active{background:var(--accent);color:#fff;border-color:var(--accent)}
   .mod-badge{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:18px;padding:0 4px;margin-left:4px;vertical-align:middle}
   .mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px}
-  .mcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .mcard-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
   .mcard-route{font-size:14px;font-weight:600;color:var(--text)}
   .mcard-meta{font-size:12px;color:var(--text2);margin-top:2px}
   .mcard-logist{font-size:12px;color:var(--text2);margin-bottom:8px;padding:6px 8px;background:var(--bg);border-radius:6px}
+  .mcard-section{background:var(--bg);border-radius:8px;padding:2px 10px;margin-bottom:8px}
+  .mcard-logist-block{background:rgba(79,124,255,.07);border:1px solid rgba(79,124,255,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px}
+  .mcard-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:.5px solid var(--border);gap:8px}
+  .mcard-row:last-child{border-bottom:none}
+  .mcard-lbl{font-size:12px;color:var(--text3);flex-shrink:0;min-width:70px}
+  .mcard-val{font-size:13px;color:var(--text);text-align:right;word-break:break-word}
   .mcard-status{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0}
   .s-pending{background:#FFF3CD;color:#856404}
   .s-approved{background:#D1ECF1;color:#0C5460}
@@ -1750,6 +1756,15 @@ function renderMod(){
       o.price_card?`Карта: ${o.price_card} грн/т`:'',
     ].filter(Boolean).join(' · ');
 
+    const dateRange = o.date_from
+      ? (o.date_to && o.date_to!==o.date_from
+          ? `📅 ${o.date_from} — ${o.date_to}`
+          : `📅 ${o.date_from}`)
+      : '';
+
+    const fromLine = [o.region_from, o.city_from].filter(Boolean).join(', ') || '—';
+    const toLine   = [o.region_to,   o.city_to  ].filter(Boolean).join(', ') || '—';
+
     const actions=o.status==='pending'?`
       <div class="mcard-actions">
         <button class="m-btn m-btn-ok" onclick="publishLogistOrder(${o.id})">📢 Опублікувати</button>
@@ -1762,22 +1777,39 @@ function renderMod(){
     `:'';
 
     return `<div class="mcard" id="mc-${o.id}">
+      <!-- Шапка: номер + статус -->
       <div class="mcard-top">
-        <div>
-          <div class="mcard-route">📍 ${o.city_from||'—'} → ${o.city_to||'—'}${o.distance?' · '+o.distance+' км':''}</div>
-          <div class="mcard-meta">📦 ${o.cargo||'—'} · ${o.weight||'—'} т · 🚛 ${o.truck_type||'—'}${o.car_count>1?' · '+o.car_count+' авто':''}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          ${o.order_num?`<span style="font-size:11px;font-weight:700;color:var(--accent);font-family:var(--mono)">#${o.order_num}</span>`:''}
+        <div style="display:flex;align-items:center;gap:8px">
+          ${o.order_num?`<span style="font-size:15px;font-weight:700;color:var(--accent);font-family:var(--mono)">#${o.order_num}</span>`:''}
           <span class="mcard-status ${statClass}">${statLabel}</span>
         </div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${(o.created_at||'').slice(0,16)}</div>
       </div>
-      <div class="mcard-logist" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
-        <span>👤 <b>${o.logist_name||'—'}</b>${o.company?' · '+o.company:''}</span>
-        <a href="tel:${o.contact_phone||o.logist_phone||''}" style="color:var(--accent);font-weight:600;font-size:13px;text-decoration:none">📞 ${o.contact_phone||o.logist_phone||'—'}</a>
+
+      <!-- Маршрут -->
+      <div class="mcard-section">
+        <div class="mcard-row"><span class="mcard-lbl">Звідки</span><span class="mcard-val">${fromLine}</span></div>
+        <div class="mcard-row"><span class="mcard-lbl">Куди</span><span class="mcard-val">${toLine}</span></div>
+        ${o.distance?`<div class="mcard-row"><span class="mcard-lbl">Відстань</span><span class="mcard-val">${o.distance} км</span></div>`:''}
+        ${dateRange?`<div class="mcard-row"><span class="mcard-lbl">Дати</span><span class="mcard-val">${dateRange}</span></div>`:''}
       </div>
-      ${prices?`<div class="mcard-prices">💰 ${prices}</div>`:''}
-      <div style="font-size:11px;color:var(--text3)">${o.created_at||''}</div>
+
+      <!-- Вантаж -->
+      <div class="mcard-section">
+        <div class="mcard-row"><span class="mcard-lbl">Вантаж</span><span class="mcard-val">${o.cargo||'—'}</span></div>
+        <div class="mcard-row"><span class="mcard-lbl">Вага</span><span class="mcard-val">${o.weight||'—'} т</span></div>
+        <div class="mcard-row"><span class="mcard-lbl">Тип авто</span><span class="mcard-val">${o.truck_type||'—'}</span></div>
+        ${o.car_count>1?`<div class="mcard-row"><span class="mcard-lbl">К-сть авто</span><span class="mcard-val">${o.car_count}</span></div>`:''}
+        ${prices?`<div class="mcard-row"><span class="mcard-lbl">Ціна</span><span class="mcard-val">${prices}</span></div>`:''}
+      </div>
+
+      <!-- Логіст -->
+      <div class="mcard-logist-block">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Логіст</div>
+        <div class="mcard-row"><span class="mcard-lbl">Ім'я</span><span class="mcard-val"><b>${o.logist_name||'—'}</b>${o.company?' · '+o.company:''}</span></div>
+        <div class="mcard-row"><span class="mcard-lbl">Телефон</span><span class="mcard-val"><a href="tel:${o.contact_phone||o.logist_phone||''}" style="color:var(--accent);text-decoration:none;font-weight:600">${o.contact_phone||o.logist_phone||'—'}</a></span></div>
+      </div>
+
       ${actions}
     </div>`;
   }).join('');
