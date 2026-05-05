@@ -39,6 +39,14 @@ body{padding-bottom:80px;overflow-y:auto}
 .frow input::placeholder{color:var(--text3)}
 .frow input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
+/* Region select */
+.frow select.reg-sel{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font);text-align:right;appearance:none;-webkit-appearance:none;padding:12px 0;cursor:pointer}
+.frow select.reg-sel option{background:var(--surface);color:var(--text)}
+
+/* Date input */
+.frow input[type=date]{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font);text-align:right;padding:12px 0;cursor:pointer}
+.frow input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:pointer}
+
 /* City search */
 .city-wrap{flex:1;position:relative}
 .city-inp{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font);text-align:right;padding:12px 0}
@@ -99,24 +107,51 @@ body{padding-bottom:80px;overflow-y:auto}
   <div class="sec-lbl">Маршрут</div>
   <div class="fcard">
     <div class="frow">
-      <span class="flbl req">Звідки</span>
+      <span class="flbl req">Область (звідки)</span>
+      <select class="reg-sel" id="region_from">
+        <option value="">— Оберіть —</option>
+      </select>
+    </div>
+    <div class="frow">
+      <span class="flbl req">Місто/Село (звідки)</span>
       <div class="city-wrap">
-        <input class="city-inp" id="city_from" placeholder="Місто або село" autocomplete="off"
-          oninput="citySearch(this,'drop-from')" onblur="delayHide('drop-from')" onkeydown="cityKey(event,'drop-from')">
+        <input class="city-inp" id="city_from" placeholder="Назва" autocomplete="off"
+          oninput="citySearch(this,'drop-from')" onblur="delayHide('drop-from')" onkeydown="cityKey(event,'drop-from')"
+          onfocus="scrollToField(this)">
         <div class="city-drop" id="drop-from"></div>
       </div>
     </div>
     <div class="frow">
-      <span class="flbl req">Куди</span>
+      <span class="flbl req">Область (куди)</span>
+      <select class="reg-sel" id="region_to">
+        <option value="">— Оберіть —</option>
+      </select>
+    </div>
+    <div class="frow">
+      <span class="flbl req">Місто/Село (куди)</span>
       <div class="city-wrap">
-        <input class="city-inp" id="city_to" placeholder="Місто або село" autocomplete="off"
-          oninput="citySearch(this,'drop-to')" onblur="delayHide('drop-to')" onkeydown="cityKey(event,'drop-to')">
+        <input class="city-inp" id="city_to" placeholder="Назва" autocomplete="off"
+          oninput="citySearch(this,'drop-to')" onblur="delayHide('drop-to')" onkeydown="cityKey(event,'drop-to')"
+          onfocus="scrollToField(this)">
         <div class="city-drop" id="drop-to"></div>
       </div>
     </div>
     <div class="frow">
       <span class="flbl">Відстань</span>
-      <input type="number" id="distance" placeholder="км" inputmode="numeric">
+      <input type="number" id="distance" placeholder="км" inputmode="numeric" onfocus="scrollToField(this)">
+    </div>
+  </div>
+
+  <!-- ДАТИ -->
+  <div class="sec-lbl">Дати навантаження</div>
+  <div class="fcard">
+    <div class="frow">
+      <span class="flbl req">Початок</span>
+      <input type="date" id="date_from" onfocus="scrollToField(this)">
+    </div>
+    <div class="frow">
+      <span class="flbl">Кінець</span>
+      <input type="date" id="date_to" onfocus="scrollToField(this)">
     </div>
   </div>
 
@@ -125,15 +160,15 @@ body{padding-bottom:80px;overflow-y:auto}
   <div class="fcard">
     <div class="frow">
       <span class="flbl req">Вантаж</span>
-      <input type="text" id="cargo" placeholder="Зерно, соняшник..." autocomplete="off" oninput="capFirst(this)">
+      <input type="text" id="cargo" placeholder="Зерно, соняшник..." autocomplete="off" oninput="capFirst(this)" onfocus="scrollToField(this)">
     </div>
     <div class="frow">
       <span class="flbl req">Вага, т</span>
-      <input type="number" id="weight" placeholder="0.0" inputmode="decimal" step="0.1">
+      <input type="number" id="weight" placeholder="0.0" inputmode="decimal" step="0.1" onfocus="scrollToField(this)">
     </div>
     <div class="frow">
       <span class="flbl">К-сть авто</span>
-      <input type="number" id="car_count" placeholder="1" inputmode="numeric" value="1">
+      <input type="number" id="car_count" placeholder="1" inputmode="numeric" value="1" onfocus="scrollToField(this)">
     </div>
   </div>
 
@@ -181,6 +216,41 @@ const tgUser = tg.initDataUnsafe?.user || {};
 
 const TRUCKS = ['Зерновоз','Самосвал','Тент','Рефрижератор','Цистерна','Бортовий','Щеповоз'];
 const PRICES = [{k:'ndv',l:'ПДВ'},{k:'fop',l:'ФОП'},{k:'nal',l:'Нал'},{k:'card',l:'Карта'}];
+
+const UA_REGIONS = [
+  'Вінницька','Волинська','Дніпропетровська','Донецька','Житомирська',
+  'Закарпатська','Запорізька','Івано-Франківська','Київська','Кіровоградська',
+  'Луганська','Львівська','Миколаївська','Одеська','Полтавська',
+  'Рівненська','Сумська','Тернопільська','Харківська','Херсонська',
+  'Хмельницька','Черкаська','Чернівецька','Чернігівська'
+];
+
+// Заповнюємо обидва select'и областями
+['region_from','region_to'].forEach(id=>{
+  const sel=document.getElementById(id);
+  UA_REGIONS.forEach(r=>{
+    const o=document.createElement('option');
+    o.value=r; o.textContent=r;
+    sel.appendChild(o);
+  });
+});
+
+// Scroll поля щоб клавіатура не перекривала
+function scrollToField(el){
+  setTimeout(()=>{
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 300);
+}
+
+// visualViewport — підіймаємо сторінку коли клавіатура відкрита
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>{
+    const focused=document.activeElement;
+    if(focused && (focused.tagName==='INPUT'||focused.tagName==='SELECT'||focused.tagName==='TEXTAREA')){
+      setTimeout(()=>focused.scrollIntoView({behavior:'smooth',block:'center'}),100);
+    }
+  });
+}
 
 // Список міст України (топ-200+)
 const CITIES = [
@@ -351,6 +421,9 @@ async function submit(){
 
   if(!cf) return showErr('Введіть місто відправлення');
   if(!ct) return showErr('Введіть місто призначення');
+  if(!document.getElementById('region_from').value) return showErr('Оберіть область відправлення');
+  if(!document.getElementById('region_to').value) return showErr('Оберіть область призначення');
+  if(!document.getElementById('date_from').value) return showErr('Вкажіть дату початку навантаження');
   if(!cargo) return showErr('Введіть тип вантажу');
   if(!weight) return showErr('Введіть вагу');
   if(!st.trucks.length) return showErr('Оберіть тип авто');
@@ -365,8 +438,12 @@ async function submit(){
 
   const payload={
     telegram_id: tgUser.id||0,
-    region_from:'', city_from:cf,
-    region_to:'',   city_to:ct,
+    region_from: document.getElementById('region_from').value,
+    city_from: cf,
+    region_to: document.getElementById('region_to').value,
+    city_to: ct,
+    date_from: document.getElementById('date_from').value||null,
+    date_to:   document.getElementById('date_to').value||null,
     distance: document.getElementById('distance').value.trim()||null,
     cargo,
     weight,
