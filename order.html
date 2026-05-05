@@ -103,8 +103,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <span class="chev">›</span>
     </div>
     <div class="row">
-      <span class="row-lbl req">Місто від</span>
-      <input type="text" id="city_from" placeholder="Введіть місто" autocomplete="off">
+      <span class="row-lbl req">Місто/Село від</span>
+      <input type="text" id="city_from" placeholder="Введіть назву" autocomplete="off" oninput="capFirst(this)">
     </div>
     <div class="row" onclick="openModal('to')">
       <span class="row-lbl req">Область до</span>
@@ -112,8 +112,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <span class="chev">›</span>
     </div>
     <div class="row">
-      <span class="row-lbl req">Місто до</span>
-      <input type="text" id="city_to" placeholder="Введіть місто" autocomplete="off">
+      <span class="row-lbl req">Місто/Село до</span>
+      <input type="text" id="city_to" placeholder="Введіть назву" autocomplete="off" oninput="capFirst(this)">
     </div>
     <div class="row">
       <span class="row-lbl">Відстань</span>
@@ -211,6 +211,11 @@ const tgUser = tg.initDataUnsafe?.user || {};
     </div>
   `).join('');
 })();
+
+function capFirst(inp){
+  const v=inp.value;
+  if(v.length>0) inp.value=v.charAt(0).toUpperCase()+v.slice(1);
+}
 
 function selTruck(t){
   st.truck=t;
