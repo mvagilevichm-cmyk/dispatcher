@@ -138,6 +138,7 @@
   .s-pending{background:#FFF3CD;color:#856404}
   .s-approved{background:#D1ECF1;color:#0C5460}
   .s-rejected{background:#F8D7DA;color:#721C24}
+  .s-closed{background:#E2E3E5;color:#383D41}
   .s-published{background:#D4EDDA;color:#155724}
   .mcard-prices{font-size:12px;color:var(--text2);margin-bottom:8px}
   .mcard-actions{display:flex;gap:6px;margin-top:10px}
@@ -215,6 +216,7 @@
         <div class="mod-f active" onclick="setModFilter('pending',this)">⏳ Нові <span class="mod-badge" id="badge-pending">0</span></div>
         <div class="mod-f" onclick="setModFilter('published',this)">📢 Опубліковані</div>
         <div class="mod-f" onclick="setModFilter('rejected',this)">❌ Відхилені</div>
+        <div class="mod-f" onclick="setModFilter('closed',this)">⚫️ Закриті</div>
         <div class="mod-f" onclick="setModFilter('',this)">Всі</div>
       </div>
       <div id="mod-list"><div class="mod-empty">Завантаження...</div></div>
@@ -1746,8 +1748,8 @@ function renderMod(){
   if(!list.length){el.innerHTML='<div class="mod-empty">Немає заявок</div>';return;}
 
   el.innerHTML=list.map(o=>{
-    const statLabel={pending:'⏳ Нова',approved:'✅ Прийнята',rejected:'❌ Відхилена',published:'📢 Опублікована'}[o.status]||o.status;
-    const statClass={pending:'s-pending',approved:'s-approved',rejected:'s-rejected',published:'s-published'}[o.status]||'';
+    const statLabel={pending:'⏳ Нова',approved:'✅ Прийнята',rejected:'❌ Відхилена',published:'📢 Опублікована',closed:'⚫️ Закрита'}[o.status]||o.status;
+    const statClass={pending:'s-pending',approved:'s-approved',rejected:'s-rejected',published:'s-published',closed:'s-closed'}[o.status]||'';
 
     const prices=[
       o.price_fop?`ФОП: ${o.price_fop} грн/т`:'',
