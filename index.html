@@ -1879,6 +1879,8 @@ async function closeLogistOrder(id, closeType){
     manual:  '⚫️ Закрити заявку'
   };
   if(!confirm(labels[closeType]+'?')) return;
+  const card = document.getElementById('mc-'+id);
+  if(card){ card.style.opacity='0.5'; card.querySelectorAll('button').forEach(b=>b.disabled=true); }
   try{
     const r=await fetch(`${API_URL}/api/close_logist_order`,{
       method:'POST',
@@ -1887,14 +1889,15 @@ async function closeLogistOrder(id, closeType){
     });
     const res=await r.json();
     if(res.status==='ok'){
-      const o=modOrders.find(x=>x.id===id);
-      if(o) o.status='closed';
+      modOrders = modOrders.filter(x=>x.id!==id);
       renderMod();
     } else {
       alert('Помилка: '+(res.message||'невідома'));
+      if(card){ card.style.opacity='1'; card.querySelectorAll('button').forEach(b=>b.disabled=false); }
     }
   }catch(e){
     alert('Помилка: '+e.message);
+    if(card){ card.style.opacity='1'; card.querySelectorAll('button').forEach(b=>b.disabled=false); }
   }
 }
 
