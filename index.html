@@ -239,9 +239,15 @@
           <div class="form-row"><label>Куди (область, місто)</label><input type="text" id="g-to" placeholder="Одеська обл., м. Чорноморськ"></div>
           <div class="form-row"><label>Відстань (км)</label><input type="number" id="g-dist" placeholder="310"></div>
           <div class="form-row"><label>Примітка до маршруту</label><input type="text" id="g-route-note" placeholder="цілодобово на УТР"></div>
-          <div class="form-row-2">
-            <div class="form-row" style="margin:0"><label>Ціна НДС (грн)</label><input type="number" id="g-price-nds" placeholder="1000"></div>
-            <div class="form-row" style="margin:0"><label>Ціна ФОП (грн)</label><input type="number" id="g-price-fop" placeholder="900"></div>
+          <div id="g-price-fields">
+            <div class="form-row-2">
+              <div class="form-row" style="margin:0"><label>Ціна НДС (грн)</label><input type="number" id="g-price-nds" placeholder="1000"></div>
+              <div class="form-row" style="margin:0"><label>Ціна ФОП (грн)</label><input type="number" id="g-price-fop" placeholder="900"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer" onclick="toggleGenPriceRequest()">
+            <div id="g-price-req-box" style="width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s"></div>
+            <span style="font-size:13px;color:var(--text2)">Запит ціни <span style="color:var(--text3);font-size:11px">(перевізник називає свою ціну)</span></span>
           </div>
           <div class="form-row"><label>Тип авто</label><input type="text" id="g-truck" placeholder="Самоскиди"></div>
         </div>
@@ -264,7 +270,7 @@
 <!-- МОДАЛ: ПЕРЕВОЗЧИК -->
 <div class="modal-bg" id="modalCarrier">
   <div class="modal">
-    <div class="modal-title">Новый перевозчик</div>
+    <div class="modal-title" id="carrierModalTitle">Новый перевозчик</div>
     <div class="form-row"><label>Имя</label><input type="text" id="c-name" placeholder="Василий К."></div>
     <div class="form-row"><label>Базировка (область)</label><div class="city-wrap"><input type="text" id="c-city" placeholder="Київська" autocomplete="off" oninput="citySearch(this,'c-city-dd')" onclick="citySearch(this,'c-city-dd')" onblur="setTimeout(()=>closeCityDd('c-city-dd'),200)"><div class="city-dropdown" id="c-city-dd"></div></div></div>
     <div class="group-label">Транспорт</div>
@@ -288,7 +294,7 @@
     <div class="form-row"><label>Комментарий</label><textarea id="c-comment" placeholder="Работает только по выходным..."></textarea></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modalCarrier')">Отмена</button>
-      <button class="btn-save" onclick="saveCarrier()">Сохранить</button>
+      <button class="btn-save" id="carrierSaveBtn" onclick="saveCarrier()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -846,13 +852,14 @@ function renderCarriers(){
         ${hidHTML}
         <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
           <div style="display:flex;gap:6px;align-items:center"><a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()" style="font-size:11px">📞 ${ph}</a><button onclick="event.stopPropagation();navigator.clipboard.writeText('${phoneForCall(c.phone)}').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)})" style="background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer">📋</button></div>
-
+          <button onclick="event.stopPropagation();openAddCallForCarrier('${sp}','${sn}',window._orderSearch&&window._orderSearch.orderNum||'')" style="background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer">+ Звонок</button>
         </div>
       </div>
       <div class="card-body" id="body-${key}">
         <div class="card-section">
           <div class="section-label">Контакты</div>
           <div class="phone-row"><span class="phone-num">${ph}</span><a class="call-btn" href="tel:${phoneForCall(c.phone)}" onclick="event.stopPropagation()">Позвонить</a></div>
+          <button onclick="event.stopPropagation();openEditCarrier('${sp}')" style="margin-top:8px;width:100%;background:rgba(79,124,255,.1);border:1px solid rgba(79,124,255,.3);color:var(--accent);border-radius:6px;padding:7px;font-size:12px;cursor:pointer">✎ Редактировать перевозчика</button>
         </div>
         <div class="card-section">
           <div class="section-label">Все звонки</div>
@@ -879,7 +886,49 @@ function getVehicleRows(){
   const rows=[...document.querySelectorAll('.c-vehicle-row')];
   return rows.map(r=>({cars:r.querySelector('.c-cars-inp').value.trim(),type:r.querySelector('.c-type-inp').value})).filter(r=>r.cars||r.type);
 }
+// Запит ціни в Розсилці
+let genPriceRequest=false;
+function toggleGenPriceRequest(){
+  genPriceRequest=!genPriceRequest;
+  const box=document.getElementById('g-price-req-box');
+  const fields=document.getElementById('g-price-fields');
+  if(genPriceRequest){
+    box.style.background='var(--accent)';box.style.borderColor='var(--accent)';box.innerHTML='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="2" fill="none"/></svg>';
+    fields.style.display='none';
+  } else {
+    box.style.background='';box.style.borderColor='var(--border)';box.innerHTML='';
+    fields.style.display='block';
+  }
+}
+
+// Редактирование перевозчика
+let editCarrierPhone=null;
+function openEditCarrier(phone){
+  const c=carriers.find(x=>normalizePhone(x.phone)===normalizePhone(phone));
+  if(!c){alert('Перевозчик не найден');return;}
+  editCarrierPhone=normalizePhone(c.phone);
+  document.getElementById('carrierModalTitle').textContent='Редактировать перевозчика';
+  document.getElementById('carrierSaveBtn').textContent='Сохранить изменения';
+  document.getElementById('c-name').value=c.name||'';
+  document.getElementById('c-city').value=c.city||'';
+  document.getElementById('c-phone').value=fullPhone(c.phone);
+  document.getElementById('c-phone').disabled=true;
+  document.getElementById('c-status').value=c.status||'Неизвестный';
+  document.getElementById('c-comment').value=c.comment||'';
+  // fill vehicle row
+  document.getElementById('c-vehicles').innerHTML=`<div class="form-row-2 c-vehicle-row"><div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" class="c-cars-inp" placeholder="3" value="${(c.cars||'').replace(/[^0-9]/g,'')}"></div><div class="form-row" style="margin:0"><label>Тип машины</label><select class="c-type-inp"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select></div></div>`;
+  const typeVal=(c.type||'').split(',')[0].trim();
+  const sel=document.querySelector('#c-vehicles .c-type-inp');
+  if(sel)[...sel.options].forEach(o=>{if(o.value===typeVal)o.selected=true;});
+  document.getElementById('c-phone-err').style.display='none';
+  openModal('modalCarrier');
+}
+
 function openAddCarrier(){
+  editCarrierPhone=null;
+  document.getElementById('carrierModalTitle').textContent='Новый перевозчик';
+  document.getElementById('carrierSaveBtn').textContent='Сохранить';
+  document.getElementById('c-phone').disabled=false;
   ['c-name','c-city','c-phone','c-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('c-vehicles').innerHTML=`<div class="form-row-2 c-vehicle-row"><div class="form-row" style="margin:0"><label>Кол-во авто</label><input type="text" class="c-cars-inp" placeholder="3"></div><div class="form-row" style="margin:0"><label>Тип машины</label><select class="c-type-inp"><option>Зерновоз</option><option>Самосвал</option><option>Тент</option><option>Рефрижератор</option><option>Цистерна</option><option>Бортовой</option><option>Щеповоз</option></select></div></div>`;
   document.getElementById('c-status').value='Неизвестный';
@@ -888,23 +937,38 @@ function openAddCarrier(){
 }
 function saveCarrier(){
   const name=document.getElementById('c-name').value.trim();
-  const rawPhone=document.getElementById('c-phone').value.trim();
-  if(!name||!rawPhone){alert('Укажите имя и телефон');return;}
-  const ph=rawPhone; // use as-is
-  if(carriers.some(c=>normalizePhone(c.phone)===normalizePhone(ph))){
-    document.getElementById('c-phone-err').style.display='block';return;
-  }
-  document.getElementById('c-phone-err').style.display='none';
+  const rawPhoneVal=document.getElementById('c-phone').value.trim();
+  if(!name||!rawPhoneVal){alert('Укажите имя и телефон');return;}
   const vehicles=getVehicleRows();
   const carsStr=vehicles.map(v=>v.cars+' '+v.type).filter(Boolean).join(', ');
   const typeStr=vehicles.map(v=>v.type).filter(Boolean).join(', ');
   const comment=document.getElementById('c-comment').value.trim();
-  const c={name,city:document.getElementById('c-city').value.trim(),cars:carsStr,type:typeStr,phone:ph,status:document.getElementById('c-status').value,comment,local:true};
-  carriers.push(c);
-  const local=JSON.parse(localStorage.getItem('localCarriers')||'[]');
-  local.push(c);localStorage.setItem('localCarriers',JSON.stringify(local));
-  closeModal('modalCarrier');renderCarriers();updateStats();
-  fetch(API_URL+'/api/save_carrier',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,city:c.city,cars:c.cars,type:c.type,phone:rawPhone(c.phone),status:c.status,comment:c.comment||''})}).catch(()=>{});
+  const city=document.getElementById('c-city').value.trim();
+  const status=document.getElementById('c-status').value;
+  if(editCarrierPhone){
+    // режим редактирования
+    const idx=carriers.findIndex(x=>normalizePhone(x.phone)===editCarrierPhone);
+    if(idx>=0){
+      carriers[idx].name=name;carriers[idx].city=city;carriers[idx].cars=carsStr;carriers[idx].type=typeStr;carriers[idx].status=status;carriers[idx].comment=comment;
+    }
+    document.getElementById('c-phone').disabled=false;
+    editCarrierPhone=null;
+    closeModal('modalCarrier');renderCarriers();updateStats();
+    fetch(API_URL+'/api/update_carrier',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:rawPhone(rawPhoneVal),name,city,cars:carsStr,type:typeStr,status,comment})}).catch(()=>{});
+  } else {
+    // режим добавления
+    const ph=rawPhoneVal;
+    if(carriers.some(c=>normalizePhone(c.phone)===normalizePhone(ph))){
+      document.getElementById('c-phone-err').style.display='block';return;
+    }
+    document.getElementById('c-phone-err').style.display='none';
+    const c={name,city,cars:carsStr,type:typeStr,phone:ph,status,comment,local:true};
+    carriers.push(c);
+    const local=JSON.parse(localStorage.getItem('localCarriers')||'[]');
+    local.push(c);localStorage.setItem('localCarriers',JSON.stringify(local));
+    closeModal('modalCarrier');renderCarriers();updateStats();
+    fetch(API_URL+'/api/save_carrier',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name,city:c.city,cars:c.cars,type:c.type,phone:rawPhone(c.phone),status:c.status,comment:c.comment||''})}).catch(()=>{});
+  }
 }
 
 function getSelectedTrucks(){return[...document.querySelectorAll('#truckChips .chip.active')].map(el=>el.textContent).join(', ');}
@@ -1257,8 +1321,14 @@ function generateText(){
   if(to){t+=`\n📌 КУДИ?\n🚛 ${toUA(to)}${routeNote?' ('+toUA(routeNote)+')':''}\n`;}
   if(dist){t+=`\n📏 Відстань: ${dist} км\n`;}
   t+='\n💲 ЦІНА:';
-  if(priceNds){t+=` ${priceNds} ПДВ`;}
-  if(priceFop){t+=`  /  ${priceFop} ФОП`;}
+  if(genMode==='order'&&orders.find(x=>x.num===document.getElementById('g-order-num').value.trim())?.priceRequest){
+    t+=' За запитом';
+  } else if(genPriceRequest){
+    t+=' За запитом';
+  } else {
+    if(priceNds){t+=` ${priceNds} ПДВ`;}
+    if(priceFop){t+=`  /  ${priceFop} ФОП`;}
+  }
   t+='\n';
   if(truck){t+=`\n🚛 АВТО: ${toUA(truck)}\n`;}
   t+='\n📞 Телефон:\n+380633885088\n';
