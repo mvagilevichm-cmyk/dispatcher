@@ -1774,6 +1774,12 @@ function renderMod(){
         <textarea id="rt-${o.id}" rows="2" placeholder="Причина відхилення (необов'язково)"></textarea>
         <button class="r-send" onclick="modAction(${o.id},'rejected')">Відхилити</button>
       </div>
+    `:o.status==='published'?`
+      <div class="mcard-actions">
+        <button class="m-btn m-btn-ok" onclick="closeLogistOrder(${o.id},'freight')">🤝 Зафрахтовано</button>
+        <button class="m-btn m-btn-ok" onclick="closeLogistOrder(${o.id},'radar')">⚡️ Через Радар</button>
+        <button class="m-btn m-btn-rej" onclick="closeLogistOrder(${o.id},'manual')">⚫️ Закрити</button>
+      </div>
     `:'';
 
     return `<div class="mcard" id="mc-${o.id}">
@@ -1863,6 +1869,32 @@ async function publishLogistOrder(id){
   }catch(e){
     alert('Помилка: '+e.message);
     if(btn){ btn.disabled=false; btn.textContent='📢 Опублікувати'; }
+  }
+}
+
+async function closeLogistOrder(id, closeType){
+  const labels = {
+    freight: '🤝 Зафрахтовано',
+    radar:   '⚡️ Зафрахтовано через Радар',
+    manual:  '⚫️ Закрити заявку'
+  };
+  if(!confirm(labels[closeType]+'?')) return;
+  try{
+    const r=await fetch(`${API_URL}/api/close_logist_order`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({order_id:id, close_type:closeType})
+    });
+    const res=await r.json();
+    if(res.status==='ok'){
+      const o=modOrders.find(x=>x.id===id);
+      if(o) o.status='closed';
+      renderMod();
+    } else {
+      alert('Помилка: '+(res.message||'невідома'));
+    }
+  }catch(e){
+    alert('Помилка: '+e.message);
   }
 }
 
