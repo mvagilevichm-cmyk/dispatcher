@@ -143,12 +143,16 @@ async function loadOrder() {
 }
 
 function renderOrder(d) {
-  var from = d.cityFrom + (d.villFrom ? ', ' + d.villFrom : '');
-  var to = d.cityTo + (d.villTo ? ', ' + d.villTo : '');
+  var fromCity = d.from_city || d.city_from || '';
+  var fromVill = d.from_village || d.region_from || '';
+  var toCity   = d.to_city   || d.city_to   || '';
+  var toVill   = d.to_village || d.region_to || '';
+  var from = fromCity + (fromVill ? ', ' + fromVill : '');
+  var to   = toCity   + (toVill   ? ', ' + toVill   : '');
   document.getElementById('route').innerHTML = from + ' <span class="order-arrow">→</span> ' + to;
   document.getElementById('b-km').textContent = (d.distance || '—') + ' км';
   document.getElementById('b-ton').textContent = (d.weight || '—') + ' т';
-  document.getElementById('b-cars').textContent = (d.numCars || '—') + ' машин';
+  document.getElementById('b-cars').textContent = (d.car_count || '—') + ' машин';
   document.getElementById('b-cargo').textContent = d.cargo || '—';
   document.getElementById('loading').style.display = 'none';
   document.getElementById('main').style.display = 'block';
