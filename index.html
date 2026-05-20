@@ -152,6 +152,10 @@
   .reject-wrap.show{display:block}
   .reject-wrap textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--font);font-size:13px;color:var(--text);resize:none;outline:none}
   .reject-wrap .r-send{margin-top:6px;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+  .tmpl-card{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color .15s}
+  .tmpl-card.active{border-color:var(--accent)}
+  .photo-thumb{border-radius:8px;cursor:pointer;border:2px solid transparent;transition:border-color .15s;object-fit:cover;width:100%;height:100px;display:block}
+  .photo-thumb.active{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -166,6 +170,7 @@
     <div class="tab" onclick="switchTab('calls')">Звонки</div>
     <div class="tab" onclick="switchTab('mod')" id="tab-mod">📋 Модерація</div>
     <div class="tab" onclick="switchTab('gen')">Рассылка</div>
+    <div class="tab" onclick="switchTab('tmpl')">Шаблон</div>
   </div>
   <div class="search-bar" id="searchBar">
     <input type="text" id="searchInput" placeholder="Поиск по городу, имени, телефону..." oninput="renderCarriers()" autocomplete="off">
@@ -260,6 +265,38 @@
         <button class="btn-save" onclick="generateText()" style="width:100%;margin-top:12px">Згенерувати оголошення</button>
         <div class="gen-output" id="genOutput" style="display:none"></div>
         <button class="copy-btn" onclick="copyText()" id="copyBtn" style="display:none">Скопіювати текст</button>
+      </div>
+    </div>
+
+    <div class="section" id="sec-tmpl">
+      <div class="gen-section">
+        <div class="section-label">Стиль картки</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+          <div class="tmpl-card" id="tmpl-A" onclick="selectTemplate('A')">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант А</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">Градієнт знизу · маршрут крупно</div>
+          </div>
+          <div class="tmpl-card" id="tmpl-B" onclick="selectTemplate('B')">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Б</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">Ліва смуга · текст зліва</div>
+          </div>
+          <div class="tmpl-card" id="tmpl-C" onclick="selectTemplate('C')">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант В</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">Плашки зверху і знизу</div>
+          </div>
+          <div class="tmpl-card" id="tmpl-D" onclick="selectTemplate('D')">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Г</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">Центр + чіпси з даними</div>
+          </div>
+        </div>
+      </div>
+      <div class="gen-section">
+        <div class="section-label">Фонове фото</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px" id="tmpl-photos"></div>
+      </div>
+      <div class="gen-section">
+        <button class="btn-save" onclick="saveTemplate()" style="width:100%">Зберегти шаблон</button>
+        <div id="tmpl-saved" style="display:none;color:var(--green);font-size:13px;margin-top:10px;text-align:center">✅ Шаблон збережено</div>
       </div>
     </div>
   </div>
@@ -1465,7 +1502,7 @@ function saveAllCalls(){
   });
 }
 function switchTab(tab){
-  const tabs=['carriers','orders','calls','mod','gen'];
+  const tabs=['carriers','orders','calls','mod','gen','tmpl'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(`sec-${tab}`).classList.add('active');
@@ -1476,6 +1513,47 @@ function switchTab(tab){
   if(tab==='orders')renderOrders();
   if(tab==='calls')renderCalls();
   if(tab==='mod')loadModeration();
+  if(tab==='tmpl')loadTemplate();
+}
+
+let tmplStyle='A', tmplPhoto='trucks_sunset.jpg';
+const TMPL_PHOTOS=['truck_blue.jpg','trucks_sunset.jpg','truck_road.jpg','highway_sunset.jpg','ukraine_trucks.jpg','ukraine_map.jpg'];
+const TMPL_PHOTO_URL='https://mvagilevichm-cmyk.github.io/dispatcher/photos/';
+
+function selectTemplate(v){
+  tmplStyle=v;
+  document.querySelectorAll('.tmpl-card').forEach(c=>c.classList.toggle('active',c.id==='tmpl-'+v));
+}
+function selectPhoto(p){
+  tmplPhoto=p;
+  document.querySelectorAll('.photo-thumb').forEach(img=>img.classList.toggle('active',img.dataset.photo===p));
+}
+function renderTmplPhotos(){
+  document.getElementById('tmpl-photos').innerHTML=
+    TMPL_PHOTOS.map(p=>`<img class="photo-thumb" data-photo="${p}" src="${TMPL_PHOTO_URL}${p}" onclick="selectPhoto('${p}')" alt="${p}">`).join('');
+}
+async function loadTemplate(){
+  renderTmplPhotos();
+  selectTemplate(tmplStyle);
+  selectPhoto(tmplPhoto);
+  try{
+    const resp=await fetch(API_URL+'/api/settings');
+    const data=await resp.json();
+    if(data.post_template)selectTemplate(data.post_template);
+    if(data.post_photo)selectPhoto(data.post_photo);
+  }catch(e){}
+}
+async function saveTemplate(){
+  const saved=document.getElementById('tmpl-saved');
+  saved.style.display='none';
+  try{
+    await Promise.all([
+      fetch(API_URL+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'post_template',value:tmplStyle})}),
+      fetch(API_URL+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'post_photo',value:tmplPhoto})})
+    ]);
+    saved.style.display='block';
+    setTimeout(()=>saved.style.display='none',3000);
+  }catch(e){alert('Помилка збереження');}
 }
 function openFabOrder(){
   editOrderIdx=-1;
