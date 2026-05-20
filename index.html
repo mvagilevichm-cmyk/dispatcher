@@ -90,11 +90,6 @@
   .callback-item{padding:10px 0;border-bottom:1px solid var(--border)}
   .callback-item:last-child{border-bottom:none}
   .gen-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
-  .gen-tabs{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-  .gen-tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;background:transparent;border:none}
-  .gen-tab.active{background:var(--accent);color:#fff}
-  .gen-output{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);margin-top:8px;line-height:1.7;white-space:pre-wrap;min-height:100px;font-family:var(--mono)}
-  .copy-btn{width:100%;margin-top:8px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);border-radius:6px;padding:9px;font-size:13px;cursor:pointer}
   .empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
   .filter-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
   .filter-chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text2);cursor:pointer;background:transparent}
@@ -169,7 +164,6 @@
     <div class="tab" onclick="switchTab('orders')">Заявки</div>
     <div class="tab" onclick="switchTab('calls')">Звонки</div>
     <div class="tab" onclick="switchTab('mod')" id="tab-mod">📋 Модерація</div>
-    <div class="tab" onclick="switchTab('gen')">Рассылка</div>
     <div class="tab" onclick="switchTab('tmpl')">Шаблон</div>
   </div>
   <div class="search-bar" id="searchBar">
@@ -225,47 +219,6 @@
         <div class="mod-f" onclick="setModFilter('',this)">Всі</div>
       </div>
       <div id="mod-list"><div class="mod-empty">Завантаження...</div></div>
-    </div>
-
-    <div class="section" id="sec-gen">
-      <div class="gen-section">
-        <div class="gen-tabs">
-          <button class="gen-tab active" onclick="switchGenTab('manual',this)">Заполнить вручную</button>
-          <button class="gen-tab" onclick="switchGenTab('order',this)">По номеру заявки</button>
-        </div>
-        <div id="gen-manual">
-          <div class="form-row"><label>Що везем</label><input type="text" id="g-cargo" placeholder="Макуха Соняшникова"></div>
-          <div class="form-row"><label>Обʼєм / Вага</label><input type="text" id="g-weight" placeholder="2500 т"></div>
-          <div class="form-row-2">
-            <div class="form-row" style="margin:0"><label>Дата початку</label><input type="text" id="g-date-from" placeholder="30.03.26"></div>
-            <div class="form-row" style="margin:0"><label>Дата кінця</label><input type="text" id="g-date-to" placeholder="17.04.26"></div>
-          </div>
-          <div class="form-row"><label>Звідки (область, місто)</label><input type="text" id="g-from" placeholder="Черкаська обл., м. Христинівка"></div>
-          <div class="form-row"><label>Куди (область, місто)</label><input type="text" id="g-to" placeholder="Одеська обл., м. Чорноморськ"></div>
-          <div class="form-row"><label>Відстань (км)</label><input type="number" id="g-dist" placeholder="310"></div>
-          <div class="form-row"><label>Примітка до маршруту</label><input type="text" id="g-route-note" placeholder="цілодобово на УТР"></div>
-          <div id="g-price-fields">
-            <div class="form-row-2">
-              <div class="form-row" style="margin:0"><label>Ціна НДС (грн)</label><input type="number" id="g-price-nds" placeholder="1000"></div>
-              <div class="form-row" style="margin:0"><label>Ціна ФОП (грн)</label><input type="number" id="g-price-fop" placeholder="900"></div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer" onclick="toggleGenPriceRequest()">
-            <div id="g-price-req-box" style="width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s"></div>
-            <span style="font-size:13px;color:var(--text2)">Запит ціни <span style="color:var(--text3);font-size:11px">(перевізник називає свою ціну)</span></span>
-          </div>
-          <div class="form-row"><label>Тип авто</label><input type="text" id="g-truck" placeholder="Самоскиди"></div>
-        </div>
-        <div id="gen-order" style="display:none">
-          <div class="form-row"><label>Номер заявки</label>
-            <input type="text" id="g-order-num" placeholder="1" oninput="fillFromOrder()" style="font-size:18px;font-weight:600;color:var(--accent);font-family:var(--mono)">
-          </div>
-          <div id="g-order-preview" style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6"></div>
-        </div>
-        <button class="btn-save" onclick="generateText()" style="width:100%;margin-top:12px">Згенерувати оголошення</button>
-        <div class="gen-output" id="genOutput" style="display:none"></div>
-        <button class="copy-btn" onclick="copyText()" id="copyBtn" style="display:none">Скопіювати текст</button>
-      </div>
     </div>
 
     <div class="section" id="sec-tmpl">
@@ -923,20 +876,6 @@ function getVehicleRows(){
   const rows=[...document.querySelectorAll('.c-vehicle-row')];
   return rows.map(r=>({cars:r.querySelector('.c-cars-inp').value.trim(),type:r.querySelector('.c-type-inp').value})).filter(r=>r.cars||r.type);
 }
-// Запит ціни в Розсилці
-let genPriceRequest=false;
-function toggleGenPriceRequest(){
-  genPriceRequest=!genPriceRequest;
-  const box=document.getElementById('g-price-req-box');
-  const fields=document.getElementById('g-price-fields');
-  if(genPriceRequest){
-    box.style.background='var(--accent)';box.style.borderColor='var(--accent)';box.innerHTML='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="2" fill="none"/></svg>';
-    fields.style.display='none';
-  } else {
-    box.style.background='';box.style.borderColor='var(--border)';box.innerHTML='';
-    fields.style.display='block';
-  }
-}
 
 // Редактирование перевозчика
 let editCarrierPhone=null;
@@ -1273,23 +1212,6 @@ function renderCalls(){
 }
 
 // РАССЫЛКА
-let genMode='manual';
-function switchGenTab(mode,el){
-  genMode=mode;
-  document.querySelectorAll('.gen-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('gen-manual').style.display=mode==='manual'?'block':'none';
-  document.getElementById('gen-order').style.display=mode==='order'?'block':'none';
-  document.getElementById('genOutput').style.display='none';
-  document.getElementById('copyBtn').style.display='none';
-}
-function fillFromOrder(){
-  const num=document.getElementById('g-order-num').value.trim();
-  const o=orders.find(x=>x.num===num);
-  const prev=document.getElementById('g-order-preview');
-  if(!o){prev.textContent=num?'Заявка не найдена':'';return;}
-  prev.innerHTML=`<span style="color:var(--accent2)">✓</span> ${o.cargo||''} ${o.weight?'· '+o.weight:''}<br>${o.fromCity||''}${o.fromVillage?' / '+o.fromVillage:''} → ${o.toCity||''}${o.toVillage?' / '+o.toVillage:''}<br>${o.start||''}${o.end?' — '+o.end:''} ${o.dist?'· '+o.dist+' км':''}`;
-}
 
 // RU->UA translation dictionary
 const ruUaDict={
@@ -1326,62 +1248,6 @@ function toUA(text){
   return result;
 }
 
-function generateText(){
-  let cargo,weight,dateFrom,dateTo,from,to,dist,routeNote,priceNds,priceFop,truck;
-  if(genMode==='order'){
-    const num=document.getElementById('g-order-num').value.trim();
-    const o=orders.find(x=>x.num===num);
-    if(!o){alert('Заявка не найдена');return;}
-    cargo=o.cargo||'';weight=o.weight||'';dateFrom=o.start||'';dateTo=o.end||'';
-    from=o.fromCity+(o.fromVillage?', '+o.fromVillage:'');
-    to=o.toCity+(o.toVillage?', '+o.toVillage:'');
-    dist=o.dist||'';routeNote='';priceNds=o.priceNds||'';priceFop=o.priceFop||'';truck=o.truck||'';
-  } else {
-    cargo=document.getElementById('g-cargo').value;weight=document.getElementById('g-weight').value;
-    dateFrom=document.getElementById('g-date-from').value;dateTo=document.getElementById('g-date-to').value;
-    from=document.getElementById('g-from').value;to=document.getElementById('g-to').value;
-    dist=document.getElementById('g-dist').value;routeNote=document.getElementById('g-route-note').value;
-    priceNds=document.getElementById('g-price-nds').value;priceFop=document.getElementById('g-price-fop').value;
-    truck=document.getElementById('g-truck').value;
-  }
-  if(!cargo&&!from){alert('Заполните хотя бы груз и маршрут');return;}
-  const dateStr=dateFrom?(dateTo?`${dateFrom}-${dateTo}`:dateFrom):'';
-  let t='';
-  t+='⭐️⭐️⭐️ ВАЖЛИВА ІНФОРМАЦІЯ ⭐️⭐️⭐️\n\n';
-  t+='‼️ УВАГА ‼️\n';
-  t+='🔔 ПОТРІБНІ МАШИНИ 🔔\n';
-  if(dateStr){t+=`\n🗓 ${dateStr} 🗓\n`;}
-  t+='\n📌 ВАНТАЖ:\n';
-  if(cargo){t+=`📦 ${toUA(cargo)}\n`;}
-  if(weight){t+=`⚖️ Обʼєм: ${toUA(weight)}\n`;}
-  if(from){t+=`\n📌 ДЕ?\n🚛 ${toUA(from)}\n`;}
-  if(to){t+=`\n📌 КУДИ?\n🚛 ${toUA(to)}${routeNote?' ('+toUA(routeNote)+')':''}\n`;}
-  if(dist){t+=`\n📏 Відстань: ${dist} км\n`;}
-  t+='\n💲 ЦІНА:';
-  if(genMode==='order'&&orders.find(x=>x.num===document.getElementById('g-order-num').value.trim())?.priceRequest){
-    t+=' За запитом';
-  } else if(genPriceRequest){
-    t+=' За запитом';
-  } else {
-    if(priceNds){t+=` ${priceNds} ПДВ`;}
-    if(priceFop){t+=`  /  ${priceFop} ФОП`;}
-  }
-  t+='\n';
-  if(truck){t+=`\n🚛 АВТО: ${toUA(truck)}\n`;}
-  t+='\n📞 Телефон:\n+380633885088\n';
-  t+='\n📲 Viber:\n+37379885088\n';
-  t+='\n👤 Контакт: Максим\n';
-  t+='\n⭐️⭐️⭐️ ДЯКУЄМО ЗА УВАГУ! ⭐️⭐️⭐️';
-  document.getElementById('genOutput').textContent=t;
-  document.getElementById('genOutput').style.display='block';
-  document.getElementById('copyBtn').style.display='block';
-}
-function copyText(){
-  navigator.clipboard.writeText(document.getElementById('genOutput').textContent).then(()=>{
-    document.getElementById('copyBtn').textContent='Скопійовано!';
-    setTimeout(()=>document.getElementById('copyBtn').textContent='Скопіювати текст',2000);
-  });
-}
 
 function findCarriersForOrder(fromCity, toCity, truck, orderNum){
   switchTab('carriers');
@@ -1502,7 +1368,7 @@ function saveAllCalls(){
   });
 }
 function switchTab(tab){
-  const tabs=['carriers','orders','calls','mod','gen','tmpl'];
+  const tabs=['carriers','orders','calls','mod','tmpl'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(`sec-${tab}`).classList.add('active');
