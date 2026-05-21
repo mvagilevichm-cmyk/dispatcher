@@ -222,34 +222,42 @@
     </div>
 
     <div class="section" id="sec-tmpl">
-      <div class="gen-section">
-        <div class="section-label">Стиль картки</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-          <div class="tmpl-card" id="tmpl-A" onclick="selectTemplate('A')">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант А</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:4px">Градієнт знизу · маршрут крупно</div>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+          <div class="gen-section">
+            <div class="section-label">Стиль картки</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+              <div class="tmpl-card" id="tmpl-A" onclick="selectTemplate('A')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант А</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px">Градієнт знизу · маршрут крупно</div>
+              </div>
+              <div class="tmpl-card" id="tmpl-B" onclick="selectTemplate('B')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Б</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px">Ліва смуга · текст зліва</div>
+              </div>
+              <div class="tmpl-card" id="tmpl-C" onclick="selectTemplate('C')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант В</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px">Плашки зверху і знизу</div>
+              </div>
+              <div class="tmpl-card" id="tmpl-D" onclick="selectTemplate('D')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Г</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:4px">Центр + чіпси з даними</div>
+              </div>
+            </div>
           </div>
-          <div class="tmpl-card" id="tmpl-B" onclick="selectTemplate('B')">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Б</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:4px">Ліва смуга · текст зліва</div>
+          <div class="gen-section">
+            <div class="section-label">Фонове фото</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px" id="tmpl-photos"></div>
           </div>
-          <div class="tmpl-card" id="tmpl-C" onclick="selectTemplate('C')">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант В</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:4px">Плашки зверху і знизу</div>
-          </div>
-          <div class="tmpl-card" id="tmpl-D" onclick="selectTemplate('D')">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Г</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:4px">Центр + чіпси з даними</div>
+          <div class="gen-section">
+            <button class="btn-save" onclick="saveTemplate()" style="width:100%">Зберегти шаблон</button>
+            <div id="tmpl-saved" style="display:none;color:var(--green);font-size:13px;margin-top:10px;text-align:center">✅ Шаблон збережено</div>
           </div>
         </div>
-      </div>
-      <div class="gen-section">
-        <div class="section-label">Фонове фото</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px" id="tmpl-photos"></div>
-      </div>
-      <div class="gen-section">
-        <button class="btn-save" onclick="saveTemplate()" style="width:100%">Зберегти шаблон</button>
-        <div id="tmpl-saved" style="display:none;color:var(--green);font-size:13px;margin-top:10px;text-align:center">✅ Шаблон збережено</div>
+        <div style="width:340px;flex-shrink:0">
+          <div class="section-label" style="margin-bottom:10px">Передпосмотр</div>
+          <div id="tmpl-preview-card" style="border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.4)"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1382,21 +1390,124 @@ function switchTab(tab){
   if(tab==='tmpl')loadTemplate();
 }
 
-let tmplStyle='A', tmplPhoto='trucks_sunset.jpg';
+let tmplStyle='A', tmplPhoto='trucks_sunset.jpg', tmplPreviewData=null;
 const TMPL_PHOTOS=['truck_blue.jpg','trucks_sunset.jpg','truck_road.jpg','highway_sunset.jpg','ukraine_trucks.jpg','ukraine_map.jpg'];
 const TMPL_PHOTO_URL='https://mvagilevichm-cmyk.github.io/dispatcher/photos/';
+const TMPL_FALLBACK={region_from:'Київська',city_from:'Жашків',region_to:'Волинська',city_to:'Чорноморськ',distance:'100',cargo:'Кукурудза',weight:'200',car_count:'5',truck_type:'Зерновоз',start_date:'21.05.2026',price_nds:'',price_fop:'',order_num:'1'};
 
 function selectTemplate(v){
   tmplStyle=v;
   document.querySelectorAll('.tmpl-card').forEach(c=>c.classList.toggle('active',c.id==='tmpl-'+v));
+  updatePreview();
 }
 function selectPhoto(p){
   tmplPhoto=p;
   document.querySelectorAll('.photo-thumb').forEach(img=>img.classList.toggle('active',img.dataset.photo===p));
+  updatePreview();
 }
 function renderTmplPhotos(){
   document.getElementById('tmpl-photos').innerHTML=
     TMPL_PHOTOS.map(p=>`<img class="photo-thumb" data-photo="${p}" src="${TMPL_PHOTO_URL}${p}" onclick="selectPhoto('${p}')" alt="${p}">`).join('');
+}
+function updatePreview(){
+  const card=document.getElementById('tmpl-preview-card');
+  if(!card)return;
+  const d=tmplPreviewData||TMPL_FALLBACK;
+  const photoUrl=TMPL_PHOTO_URL+tmplPhoto;
+  const num=d.order_num||d.num||'1';
+  const rFrom=d.region_from||d.from_city||'';
+  const cFrom=d.city_from||d.from_village||'';
+  const rTo=d.region_to||d.to_city||'';
+  const cTo=d.city_to||d.to_village||'';
+  const dist=d.distance||'';
+  const cargo=d.cargo||'';
+  const weight=d.weight||'';
+  const carCount=d.car_count||'';
+  const truckType=d.truck_type||'';
+  const startDate=d.start_date||d.date||'';
+  const priceVal=d.price_nds||d.price_fop||'';
+  const priceText=priceVal?(priceVal+' грн/т'):'За запитом';
+  const priceColor=priceVal?'#00d4aa':'#ffb84d';
+  const badge=`<div style="position:absolute;top:10px;left:10px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px">ЗАЯВКА #${num}</div>`;
+  let overlay='';
+  if(tmplStyle==='A'){
+    overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.93) 0%,transparent 60%)"></div>
+      ${badge}
+      <div style="position:absolute;bottom:10px;left:12px;right:12px">
+        <div style="font-size:21px;font-weight:800;color:#fff;line-height:1.2">${rFrom} → ${rTo}</div>
+        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:3px">${cFrom} → ${cTo}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:5px">${dist} км · ${cargo} ${weight}т</div>
+      </div>`;
+  }else if(tmplStyle==='B'){
+    overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.92) 0%,rgba(0,0,0,.92) 52%,transparent 100%)"></div>
+      <div style="position:absolute;top:0;left:0;bottom:0;width:5px;background:#4f7cff"></div>
+      <div style="position:absolute;top:10px;left:14px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">ЗАЯВКА #${num}</div>
+      <div style="position:absolute;top:50%;left:14px;right:48%;transform:translateY(-50%)">
+        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2">→ ${rTo}</div>
+        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:4px">${cFrom} → ${cTo}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">${dist} км · ${cargo} ${weight}т</div>
+      </div>`;
+  }else if(tmplStyle==='C'){
+    overlay=`<div style="position:absolute;top:0;left:0;right:0;height:64px;background:rgba(0,0,0,.82);display:flex;align-items:center;padding:0 12px">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
+          <div style="font-size:15px;font-weight:700;color:#e8eaf2;line-height:1.2">${cFrom}</div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:64px;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:space-between;padding:0 12px">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${rTo}</div>
+          <div style="font-size:15px;font-weight:700;color:#e8eaf2;line-height:1.2">${cTo}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:#00d4aa;font-weight:700">${cargo} ${weight}т</div>
+          <div style="font-size:12px;color:#00d4aa">${dist} км</div>
+        </div>
+      </div>
+      <div style="position:absolute;top:10px;right:10px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">ЗАЯВКА #${num}</div>`;
+  }else{
+    overlay=`<div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      ${badge}
+      <div style="position:absolute;top:50%;left:12px;right:12px;transform:translateY(-50%);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
+        <div style="font-size:14px;font-weight:700;color:#e8eaf2;margin:2px 0">↓</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${rTo}</div>
+        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:4px">${cFrom} → ${cTo}</div>
+      </div>
+      <div style="position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:8px">
+        <div style="background:rgba(79,124,255,.85);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px">${dist} км</div>
+        <div style="background:rgba(0,212,170,.85);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px">${cargo} ${weight}т</div>
+      </div>`;
+  }
+  card.innerHTML=`
+    <div style="position:relative;width:100%;height:190px;overflow:hidden;border-radius:8px 8px 0 0">
+      <img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;display:block">
+      ${overlay}
+    </div>
+    <div style="background:#1a1d26;border:1px solid #2e3347;border-top:none;border-radius:0 0 8px 8px;padding:12px;font-size:12px;color:#e8eaf2">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#8b90a7">Машин:</span><span>${carCount} · ${truckType}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#8b90a7">Дата:</span><span>${startDate}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#8b90a7">Ціна:</span><span style="color:${priceColor}">${priceText}</span></div>
+      <div style="border-top:1px solid #2e3347;margin:8px 0"></div>
+      <div style="color:#8b90a7;margin-bottom:8px;font-size:11px">📞 +380633885088 (Максим)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <button style="background:#4f7cff;border:none;border-radius:6px;color:#fff;font-size:10px;font-weight:600;padding:6px;cursor:default">📞 Зателефонувати</button>
+        <button style="background:#2e3347;border:none;border-radius:6px;color:#e8eaf2;font-size:10px;font-weight:600;padding:6px;cursor:default">🔔 Мене цікавить</button>
+        <button style="background:#2e3347;border:none;border-radius:6px;color:#e8eaf2;font-size:10px;font-weight:600;padding:6px;cursor:default">📡 Радар</button>
+        <button style="background:#2e3347;border:none;border-radius:6px;color:#e8eaf2;font-size:10px;font-weight:600;padding:6px;cursor:default">💰 Вказати ціну</button>
+      </div>
+    </div>`;
+}
+async function loadPreviewData(){
+  try{
+    const resp=await fetch(API_URL+'/api/orders');
+    const data=await resp.json();
+    const list=Array.isArray(data)?data:(data.orders||[]);
+    const actual=list.find(o=>o.status==='Актуально');
+    if(actual)tmplPreviewData=actual;
+  }catch(e){}
+  updatePreview();
 }
 async function loadTemplate(){
   renderTmplPhotos();
@@ -1408,6 +1519,7 @@ async function loadTemplate(){
     if(data.post_template)selectTemplate(data.post_template);
     if(data.post_photo)selectPhoto(data.post_photo);
   }catch(e){}
+  loadPreviewData();
 }
 async function saveTemplate(){
   const saved=document.getElementById('tmpl-saved');
