@@ -1425,60 +1425,82 @@ function updatePreview(){
   const carCount=d.car_count||'';
   const truckType=d.truck_type||'';
   const startDate=d.start_date||d.date||'';
-  const priceVal=d.price_nds||d.price_fop||'';
-  const priceText=priceVal?(priceVal+' грн/т'):'За запитом';
-  const priceColor=priceVal?'#00d4aa':'#ffb84d';
-  const badge=`<div style="position:absolute;top:10px;left:10px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px">ЗАЯВКА #${num}</div>`;
+  const priceNds=d.price_nds||'';
+  const priceFop=d.price_fop||'';
+  const priceReq=d.price_request||(!priceNds&&!priceFop);
+  const priceDisplay=priceNds?`${priceNds} грн/т`:priceFop?`${priceFop} грн/т`:'За запитом';
+  const priceColor2=(priceNds||priceFop)?'#00d4aa':'#ffb84d';
+
+  // Price tags: vertical stack (same as real templates)
+  const ptStyle='font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;margin-bottom:3px;color:#fff';
+  let ptHtml='';
+  if(priceReq){
+    ptHtml=`<div style="${ptStyle};background:rgba(90,106,138,.85)">За запитом</div>`;
+  }else{
+    if(priceNds) ptHtml+=`<div style="${ptStyle};background:rgba(79,124,255,.85)">ПДВ: ${priceNds} грн/т</div>`;
+    if(priceFop) ptHtml+=`<div style="${ptStyle};background:rgba(0,168,132,.85)">ФОП: ${priceFop} грн/т</div>`;
+  }
+  const priceBlock=`<div style="position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end">${ptHtml}</div>`;
+
+  // 3 chips (distance/cargo/weight) — equal-width imitation
+  const cs='font-size:9px;font-weight:700;padding:4px 10px;border-radius:6px;color:#fff';
+  let chipsHtml='';
+  if(dist)   chipsHtml+=`<div style="${cs};background:rgba(11,100,119,.86)">${dist} км</div>`;
+  if(cargo)  chipsHtml+=`<div style="${cs};background:rgba(20,145,155,.86)">${cargo}</div>`;
+  if(weight) chipsHtml+=`<div style="${cs};background:rgba(10,209,200,.86)">${weight} т</div>`;
+  const hasChips=!!(dist||cargo||weight);
+
+  const badge=`<div style="position:absolute;top:10px;left:10px;background:rgba(79,124,255,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.5px">ЗАЯВКА #${num}</div>`;
+
   let overlay='';
   if(tmplStyle==='1'){
-    overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.93) 0%,transparent 60%)"></div>
-      ${badge}
-      <div style="position:absolute;bottom:10px;left:12px;right:12px">
-        <div style="font-size:21px;font-weight:800;color:#fff;line-height:1.2">${rFrom} → ${rTo}</div>
-        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:3px">${cFrom} → ${cTo}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:5px">${dist} км · ${cargo} ${weight}т</div>
-      </div>`;
+    overlay=`
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.55) 40%,transparent 68%)"></div>
+      ${badge}${priceBlock}
+      <div style="position:absolute;bottom:${hasChips?46:10}px;left:12px;right:12px">
+        <div style="font-size:19px;font-weight:800;color:#fff;line-height:1.2">${rFrom} → ${rTo}</div>
+        <div style="font-size:12px;font-weight:700;color:#00a884;margin-top:3px">${cFrom} → ${cTo}</div>
+      </div>
+      ${hasChips?`<div style="position:absolute;bottom:8px;left:12px;display:flex;gap:5px">${chipsHtml}</div>`:''}`;
   }else if(tmplStyle==='2'){
-    overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.92) 0%,rgba(0,0,0,.92) 52%,transparent 100%)"></div>
+    overlay=`
+      <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.92) 0%,rgba(0,0,0,.82) 42%,rgba(0,0,0,.15) 65%,transparent 100%)"></div>
       <div style="position:absolute;top:0;left:0;bottom:0;width:5px;background:#4f7cff"></div>
-      <div style="position:absolute;top:10px;left:14px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">ЗАЯВКА #${num}</div>
-      <div style="position:absolute;top:50%;left:14px;right:48%;transform:translateY(-50%)">
-        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
-        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2">→ ${rTo}</div>
-        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:4px">${cFrom} → ${cTo}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">${dist} км · ${cargo} ${weight}т</div>
-      </div>`;
+      <div style="position:absolute;top:10px;left:14px;background:rgba(79,124,255,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">ЗАЯВКА #${num}</div>
+      ${priceBlock}
+      <div style="position:absolute;bottom:${hasChips?46:10}px;left:14px">
+        <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.25">${rFrom} →</div>
+        <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.25">${rTo}</div>
+        <div style="font-size:11px;font-weight:700;color:rgb(220,160,0);margin-top:3px">${cFrom} → ${cTo}</div>
+      </div>
+      ${hasChips?`<div style="position:absolute;bottom:8px;left:14px;display:flex;gap:5px">${chipsHtml}</div>`:''}`;
   }else if(tmplStyle==='3'){
-    overlay=`<div style="position:absolute;top:0;left:0;right:0;height:64px;background:rgba(0,0,0,.82);display:flex;align-items:center;padding:0 12px">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
-          <div style="font-size:15px;font-weight:700;color:#e8eaf2;line-height:1.2">${cFrom}</div>
-        </div>
+    const rToBottom=hasChips?46:10;
+    overlay=`
+      <div style="position:absolute;top:0;left:0;right:0;height:38%;background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent)"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:47%;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)"></div>
+      <div style="position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end">
+        <div style="background:rgba(79,124,255,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;margin-bottom:4px">ЗАЯВКА #${num}</div>
+        ${ptHtml}
       </div>
-      <div style="position:absolute;bottom:0;left:0;right:0;height:64px;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:space-between;padding:0 12px">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${rTo}</div>
-          <div style="font-size:15px;font-weight:700;color:#e8eaf2;line-height:1.2">${cTo}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:12px;color:#00d4aa;font-weight:700">${cargo} ${weight}т</div>
-          <div style="font-size:12px;color:#00d4aa">${dist} км</div>
-        </div>
+      <div style="position:absolute;top:10px;left:12px">
+        <div style="font-size:16px;font-weight:800;color:#fff;line-height:1.15">${rFrom}</div>
+        ${cFrom?`<div style="font-size:11px;font-weight:700;color:rgb(220,160,0)">${cFrom}</div>`:''}
       </div>
-      <div style="position:absolute;top:10px;right:10px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">ЗАЯВКА #${num}</div>`;
+      <div style="position:absolute;bottom:${rToBottom}px;left:12px">
+        <div style="font-size:16px;font-weight:800;color:#fff;line-height:1.15">${rTo}</div>
+        ${cTo?`<div style="font-size:11px;font-weight:700;color:rgb(220,160,0)">${cTo}</div>`:''}
+      </div>
+      ${hasChips?`<div style="position:absolute;bottom:8px;left:12px;display:flex;gap:5px">${chipsHtml}</div>`:''}`;
   }else{
-    overlay=`<div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
-      ${badge}
-      <div style="position:absolute;top:50%;left:12px;right:12px;transform:translateY(-50%);text-align:center">
-        <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
-        <div style="font-size:14px;font-weight:700;color:#e8eaf2;margin:2px 0">↓</div>
-        <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${rTo}</div>
-        <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:4px">${cFrom} → ${cTo}</div>
+    overlay=`
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+      ${badge}${priceBlock}
+      <div style="position:absolute;top:50%;left:12px;right:12px;transform:translateY(${hasChips?'-80%':'-50%'});text-align:center">
+        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2">${rFrom} → ${rTo}</div>
+        <div style="font-size:11px;font-weight:700;color:rgb(220,160,0);margin-top:3px">${cFrom} → ${cTo}</div>
       </div>
-      <div style="position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:8px">
-        <div style="background:rgba(79,124,255,.85);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px">${dist} км</div>
-        <div style="background:rgba(0,212,170,.85);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px">${cargo} ${weight}т</div>
-      </div>`;
+      ${hasChips?`<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(14px);display:flex;justify-content:center;gap:5px">${chipsHtml}</div>`:''}`;
   }
   card.innerHTML=`
     <div style="position:relative;width:100%;height:190px;overflow:hidden;border-radius:8px 8px 0 0">
@@ -1488,7 +1510,7 @@ function updatePreview(){
     <div style="background:#1a1d26;border:1px solid #2e3347;border-top:none;border-radius:0 0 8px 8px;padding:12px;font-size:12px;color:#e8eaf2">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#8b90a7">Машин:</span><span>${carCount} · ${truckType}</span></div>
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#8b90a7">Дата:</span><span>${startDate}</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#8b90a7">Ціна:</span><span style="color:${priceColor}">${priceText}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#8b90a7">Ціна:</span><span style="color:${priceColor2}">${priceDisplay}</span></div>
       <div style="border-top:1px solid #2e3347;margin:8px 0"></div>
       <div style="color:#8b90a7;margin-bottom:8px;font-size:11px">📞 +380633885088 (Максим)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
