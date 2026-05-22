@@ -227,20 +227,20 @@
           <div class="gen-section">
             <div class="section-label">Стиль картки</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-              <div class="tmpl-card" id="tmpl-A" onclick="selectTemplate('A')">
-                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант А</div>
+              <div class="tmpl-card" id="tmpl-1" onclick="selectTemplate('1')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант 1</div>
                 <div style="font-size:11px;color:var(--text2);margin-top:4px">Градієнт знизу · маршрут крупно</div>
               </div>
-              <div class="tmpl-card" id="tmpl-B" onclick="selectTemplate('B')">
-                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Б</div>
+              <div class="tmpl-card" id="tmpl-2" onclick="selectTemplate('2')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант 2</div>
                 <div style="font-size:11px;color:var(--text2);margin-top:4px">Ліва смуга · текст зліва</div>
               </div>
-              <div class="tmpl-card" id="tmpl-C" onclick="selectTemplate('C')">
-                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант В</div>
+              <div class="tmpl-card" id="tmpl-3" onclick="selectTemplate('3')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант 3</div>
                 <div style="font-size:11px;color:var(--text2);margin-top:4px">Плашки зверху і знизу</div>
               </div>
-              <div class="tmpl-card" id="tmpl-D" onclick="selectTemplate('D')">
-                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант Г</div>
+              <div class="tmpl-card" id="tmpl-4" onclick="selectTemplate('4')">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Варіант 4</div>
                 <div style="font-size:11px;color:var(--text2);margin-top:4px">Центр + чіпси з даними</div>
               </div>
             </div>
@@ -1390,7 +1390,7 @@ function switchTab(tab){
   if(tab==='tmpl')loadTemplate();
 }
 
-let tmplStyle='A', tmplPhoto='trucks_sunset.jpg', tmplPreviewData=null;
+let tmplStyle='1', tmplPhoto='trucks_sunset.jpg', tmplPreviewData=null;
 const TMPL_PHOTOS=['truck_blue.jpg','trucks_sunset.jpg','truck_road.jpg','highway_sunset.jpg','ukraine_trucks.jpg','ukraine_map.jpg'];
 const TMPL_PHOTO_URL='https://mvagilevichm-cmyk.github.io/dispatcher/photos/';
 const TMPL_FALLBACK={region_from:'Київська',city_from:'Жашків',region_to:'Волинська',city_to:'Чорноморськ',distance:'100',cargo:'Кукурудза',weight:'200',car_count:'5',truck_type:'Зерновоз',start_date:'21.05.2026',price_nds:'',price_fop:'',order_num:'1'};
@@ -1430,7 +1430,7 @@ function updatePreview(){
   const priceColor=priceVal?'#00d4aa':'#ffb84d';
   const badge=`<div style="position:absolute;top:10px;left:10px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px">ЗАЯВКА #${num}</div>`;
   let overlay='';
-  if(tmplStyle==='A'){
+  if(tmplStyle==='1'){
     overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.93) 0%,transparent 60%)"></div>
       ${badge}
       <div style="position:absolute;bottom:10px;left:12px;right:12px">
@@ -1438,7 +1438,7 @@ function updatePreview(){
         <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:3px">${cFrom} → ${cTo}</div>
         <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:5px">${dist} км · ${cargo} ${weight}т</div>
       </div>`;
-  }else if(tmplStyle==='B'){
+  }else if(tmplStyle==='2'){
     overlay=`<div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.92) 0%,rgba(0,0,0,.92) 52%,transparent 100%)"></div>
       <div style="position:absolute;top:0;left:0;bottom:0;width:5px;background:#4f7cff"></div>
       <div style="position:absolute;top:10px;left:14px;background:#4f7cff;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">ЗАЯВКА #${num}</div>
@@ -1448,7 +1448,7 @@ function updatePreview(){
         <div style="font-size:15px;font-weight:700;color:#e8eaf2;margin-top:4px">${cFrom} → ${cTo}</div>
         <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">${dist} км · ${cargo} ${weight}т</div>
       </div>`;
-  }else if(tmplStyle==='C'){
+  }else if(tmplStyle==='3'){
     overlay=`<div style="position:absolute;top:0;left:0;right:0;height:64px;background:rgba(0,0,0,.82);display:flex;align-items:center;padding:0 12px">
         <div>
           <div style="font-size:15px;font-weight:800;color:#fff;line-height:1.2">${rFrom}</div>
