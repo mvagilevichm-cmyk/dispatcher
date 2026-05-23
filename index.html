@@ -1073,16 +1073,16 @@ function renderOrders(){
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
           <div style="display:flex;align-items:center;gap:8px">
             <div class="order-num-big">#${o.num}</div>
-            <button onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:12px;background:transparent;border:none;padding:0;cursor:pointer;opacity:${pinnedOrderNum===o.num?'1':'0.3'};color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">📌</button>
+            <button title="Закріпити заявку" onclick="event.stopPropagation();togglePinOrder('${o.num}')" style="font-size:12px;background:transparent;border:none;padding:0;cursor:pointer;opacity:${pinnedOrderNum===o.num?'1':'0.3'};color:${pinnedOrderNum===o.num?'var(--accent2)':'var(--text3)'}">📌</button>
             <div style="font-size:11px;color:var(--text3)">${fmtDate(o.date)||''}</div>
           </div>
           <div style="display:flex;gap:5px;align-items:center">
-            <button class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:3px 8px;font-size:12px">✎</button>
-            <button style="background:rgba(0,180,255,.15);border:1px solid rgba(0,180,255,.4);color:#00b4ff;border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px" onclick="event.stopPropagation();sendOrderToTG(${idx})"><span style="color:#00d4aa;font-size:11px">▲</span>ТГ</button>
+            <button title="Редагувати заявку" class="edit-btn" onclick="event.stopPropagation();openEditOrder(${idx})" style="color:var(--accent);border-color:var(--accent);padding:3px 8px;font-size:12px">✎</button>
+            <button title="Опублікувати в Telegram" style="background:rgba(0,180,255,.15);border:1px solid rgba(0,180,255,.4);color:#00b4ff;border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:3px" onclick="event.stopPropagation();sendOrderToTG(${idx})"><span style="color:#00d4aa;font-size:11px">▲</span>ТГ</button>
             ${o.tgStatus==='sent'?`
-              <button style="background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);color:var(--green);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();republishOrder(${idx})" title="Перепублікувати">🔄</button>
-              <button style="background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.35);color:var(--red);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'normal')">🔴</button>
-              <button style="background:rgba(255,184,77,.12);border:1px solid rgba(255,184,77,.35);color:var(--yellow);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'radar')">⚡️</button>
+              <button title="Перепублікувати в Telegram" style="background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);color:var(--green);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();republishOrder(${idx})">🔄</button>
+              <button title="Зафраховано — закрити публікацію" style="background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.35);color:var(--red);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'normal')">🔴</button>
+              <button title="Перевести в Радар" style="background:rgba(255,184,77,.12);border:1px solid rgba(255,184,77,.35);color:var(--yellow);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();confirmCloseTG2(${idx},'radar')">⚡️</button>
             `:''}
           </div>
         </div>
@@ -1107,7 +1107,7 @@ function renderOrders(){
           <span class="badge ${sc}">${o.status}</span>
           <div style="display:flex;gap:6px;align-items:center">
             <span style="font-size:11px;color:var(--text3)">${oc.length} звонков</span>
-            <button class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
+            <button title="Знайти перевізників за маршрутом" class="edit-btn" style="color:var(--accent);border-color:var(--accent)" onclick="event.stopPropagation();findCarriersForOrder('${o.fromCity||''}','${o.toCity||''}','${o.truck||''}','${o.num}')">🔍 Найти</button>
           </div>
         </div>
       </div>
