@@ -1065,8 +1065,7 @@ function renderOrders(){
   if(!orders.length){list.innerHTML='<div class="empty">Заявок ещё нет.<br>Нажмите + чтобы добавить.</div>';return;}
   const hasSent=orders.some(o=>o.tgStatus==='sent');
   const republishAllBtn=hasSent?`<div style="padding:0 0 10px 0"><button onclick="republishAll()" style="width:100%;background:rgba(0,212,170,.12);border:1px solid rgba(0,212,170,.35);color:var(--green);border-radius:var(--radius);padding:10px;font-size:13px;font-weight:500;cursor:pointer">🔄 Перепублікувати всі активні в ТГ</button></div>`:'';
-  list.innerHTML=republishAllBtn+orders.slice().reverse().map((o,ri)=>{
-    const idx=orders.length-1-ri;
+  list.innerHTML=republishAllBtn+orders.map((o,idx)=>({o,idx})).sort((a,b)=>(parseInt(b.o.num)||0)-(parseInt(a.o.num)||0)).map(({o,idx})=>{
     const sc=o.status==='Актуально'?'b-green':o.status==='Закрыта'?'b-gray':o.status==='На паузе'?'b-yellow':o.status==='Поставлено'?'b-blue':'b-red';
     const oc=calls.filter(c=>c.orderId===o.num);
     return `<div class="order-card">
