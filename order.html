@@ -108,9 +108,13 @@ body{padding-bottom:80px;overflow-y:auto}
   <div class="fcard">
     <div class="frow">
       <span class="flbl req">Область (звідки)</span>
-      <select class="reg-sel" id="region_from">
-        <option value="">— Оберіть —</option>
-      </select>
+      <div class="city-wrap">
+        <input class="city-inp" id="region_from" placeholder="— Оберіть —" autocomplete="off"
+          oninput="regSearch(this,'drop-reg-from')" onclick="regSearch(this,'drop-reg-from')"
+          onblur="delayHide('drop-reg-from')" onkeydown="cityKey(event,'drop-reg-from')"
+          onfocus="scrollToField(this)">
+        <div class="city-drop" id="drop-reg-from"></div>
+      </div>
     </div>
     <div class="frow">
       <span class="flbl req">Місто/Село (звідки)</span>
@@ -123,9 +127,13 @@ body{padding-bottom:80px;overflow-y:auto}
     </div>
     <div class="frow">
       <span class="flbl req">Область (куди)</span>
-      <select class="reg-sel" id="region_to">
-        <option value="">— Оберіть —</option>
-      </select>
+      <div class="city-wrap">
+        <input class="city-inp" id="region_to" placeholder="— Оберіть —" autocomplete="off"
+          oninput="regSearch(this,'drop-reg-to')" onclick="regSearch(this,'drop-reg-to')"
+          onblur="delayHide('drop-reg-to')" onkeydown="cityKey(event,'drop-reg-to')"
+          onfocus="scrollToField(this)">
+        <div class="city-drop" id="drop-reg-to"></div>
+      </div>
     </div>
     <div class="frow">
       <span class="flbl req">Місто/Село (куди)</span>
@@ -224,15 +232,19 @@ const UA_REGIONS = [
   'Хмельницька','Черкаська','Чернівецька','Чернігівська'
 ];
 
-// Заповнюємо обидва select'и областями
-['region_from','region_to'].forEach(id=>{
-  const sel=document.getElementById(id);
-  UA_REGIONS.forEach(r=>{
-    const o=document.createElement('option');
-    o.value=r; o.textContent=r;
-    sel.appendChild(o);
-  });
-});
+function regSearch(inp, dropId){
+  const dd=document.getElementById(dropId);
+  const q=(inp.value||'').trim().toLowerCase();
+  const list=q?UA_REGIONS.filter(r=>r.toLowerCase().includes(q)):UA_REGIONS;
+  if(!list.length){dd.classList.remove('show');return;}
+  dd.innerHTML=list.map(r=>{
+    if(!q) return `<div class="city-opt" onmousedown="pickCity('${r}','${inp.id}','${dropId}')">${r}</div>`;
+    const idx=r.toLowerCase().indexOf(q);
+    const hi=r.slice(0,idx)+'<mark>'+r.slice(idx,idx+q.length)+'</mark>'+r.slice(idx+q.length);
+    return `<div class="city-opt" onmousedown="pickCity('${r}','${inp.id}','${dropId}')">${hi}</div>`;
+  }).join('');
+  dd.classList.add('show');
+}
 
 // Scroll поля щоб клавіатура не перекривала
 function scrollToField(el){
@@ -419,8 +431,8 @@ async function sendOrder(){
 
   if(!cf) return showErr('Введіть місто відправлення');
   if(!ct) return showErr('Введіть місто призначення');
-  if(!document.getElementById('region_from').value) return showErr('Оберіть область відправлення');
-  if(!document.getElementById('region_to').value) return showErr('Оберіть область призначення');
+  if(!UA_REGIONS.includes(document.getElementById('region_from').value)) return showErr('Оберіть область відправлення зі списку');
+  if(!UA_REGIONS.includes(document.getElementById('region_to').value)) return showErr('Оберіть область призначення зі списку');
   if(!document.getElementById('date_from').value) return showErr('Вкажіть дату початку навантаження');
   if(!cargo) return showErr('Введіть тип вантажу');
   if(!weight) return showErr('Введіть вагу');
